@@ -1,0 +1,183 @@
+import { StyleSheet } from 'react-native';
+import { COLORS } from './GlobalStyles';
+
+/**
+ * Style riêng cho màn hình Danh sách sản phẩm (products/index.tsx).
+ * Màu sắc & token đều import từ GlobalStyles để đảm bảo đồng bộ.
+ */
+export const ProductListStyles = StyleSheet.create({
+  // ========== Layout ==========
+  screen: { flex: 1, backgroundColor: COLORS.background },
+  loadingScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+  },
+  main: { flex: 1, backgroundColor: COLORS.background },
+
+  // ========== Top Bar (đồng bộ Dashboard) ==========
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  greeting: {
+    fontSize: 10,
+    letterSpacing: 1.2,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+  },
+  topTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginTop: 2,
+    letterSpacing: -0.3,
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 19,
+    height: 19,
+    borderRadius: 10,
+    backgroundColor: COLORS.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  cartBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '800' },
+
+  // ========== Search Bar ==========
+  searchBar: {
+    height: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: COLORS.surface,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  searchIcon: { fontSize: 16, color: COLORS.textSecondary, marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    padding: 0,
+    color: COLORS.textPrimary,
+    fontSize: 14,
+  },
+
+  // ========== Category Chips ==========
+  categoryRow: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
+  categoryChip: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  categoryChipText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  categoryChipTextActive: { color: COLORS.white },
+
+  // ========== Product List ==========
+  listContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 32,
+  },
+  productRow: { gap: 12 },
+  productCardWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.05,
+    shadowRadius: 11,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+
+  // ========== Empty & Error ==========
+  emptyState: {
+    flex: 1,
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyIcon: { fontSize: 42, marginBottom: 12 },
+  emptyTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    marginTop: 6,
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  errorBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: COLORS.dangerSoft,
+    gap: 10,
+  },
+  errorText: { color: COLORS.danger, fontSize: 13, fontWeight: '600' },
+  retryButton: {
+    minHeight: 38,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+  },
+  retryButtonText: { color: COLORS.white, fontSize: 13, fontWeight: '800' },
+  pressed: { opacity: 0.85 },
+});

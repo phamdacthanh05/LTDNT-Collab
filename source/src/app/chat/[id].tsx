@@ -1,5 +1,4 @@
 // src/app/chat/[id].tsx
-// File MỚI HOÀN TOÀN.
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -20,15 +19,12 @@ import {
   type ChatMessage,
   type ConversationDetail,
 } from '../../services/chat.api';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-import { ExtraStyles } from '../../styles/ExtraStyles';
+import { ChatStyles as styles } from '../../styles/ChatStyles';
+import { COLORS } from '../../styles/GlobalStyles';
+import { formatTime } from '../../utils/format';
 
-// Tự làm mới tin nhắn mỗi 4 giây để gần giống chat thời gian thực (không cần thêm thư viện WebSocket)
+// Tự làm mới tin nhắn mỗi 4 giây để gần giống chat thời gian thực (không cần WebSocket)
 const POLL_INTERVAL_MS = 4000;
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-}
 
 export default function ChatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,15 +37,18 @@ export default function ChatDetailScreen() {
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
-  const load = useCallback(async (silent = false) => {
-    try {
-      const data = await fetchConversationDetail(id);
-      setConversation(data);
-      if (!silent) setError(null);
-    } catch (err: any) {
-      if (!silent) setError(err.message);
-    }
-  }, [id]);
+  const load = useCallback(
+    async (silent = false) => {
+      try {
+        const data = await fetchConversationDetail(id);
+        setConversation(data);
+        if (!silent) setError(null);
+      } catch (err: any) {
+        if (!silent) setError(err.message);
+      }
+    },
+    [id]
+  );
 
   useEffect(() => {
     (async () => {
@@ -81,60 +80,90 @@ export default function ChatDetailScreen() {
 
   if (loading) {
     return (
-      <View style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error && !conversation) {
     return (
-      <View style={GlobalStyles.center}>
-        <Text style={GlobalStyles.errorText}>{error}</Text>
-        <Pressable onPress={() => router.back()} style={GlobalStyles.backButton}>
-          <Text style={GlobalStyles.backButtonText}>Quay lại</Text>
+      <SafeAreaView style={styles.loadingScreen}>
+        <Text style={{ color: COLORS.danger, fontSize: 14, marginBottom: 16 }}>
+          {error}
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.emptyButtonText}>Quay lại</Text>
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
+  const title =
+    conversation?.subject || conversation?.product?.name || 'Hỗ trợ khách hàng';
+
   return (
     <KeyboardAvoidingView
-      style={ExtraStyles.chatContainer}
+      style={styles.chatContainer}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <View style={GlobalStyles.topBack}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={GlobalStyles.topBackText}>{'‹ '}{conversation?.subject || conversation?.product?.name || 'Hỗ trợ khách hàng'}</Text>
+      <SafeAreaView style={styles.flex1} edges={['top']}>
+        {/* ============ Top Bar ============ */}
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Quay lại"
+          >
+            <Text style={styles.backButtonText}>‹</Text>
           </Pressable>
+
+          <View style={styles.heading}>
+            <Text style={styles.greeting}>HỘI THOẠI</Text>
+            <Text style={styles.topTitle} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
         </View>
 
+        {/* ============ Messages ============ */}
         <FlatList
           ref={listRef}
           data={conversation?.messages || []}
           keyExtractor={(item) => item.id}
-          style={{ flex: 1 }}
-          contentContainerStyle={ExtraStyles.messageList}
+          style={styles.flex1}
+          contentContainerStyle={styles.messageList}
+          showsVerticalScrollIndicator={false}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           renderItem={({ item }) => {
             const isMine = item.senderRole === 'USER';
             return (
               <View
                 style={[
-                  ExtraStyles.bubbleRow,
-                  isMine ? ExtraStyles.bubbleRowMine : ExtraStyles.bubbleRowTheirs,
+                  styles.bubbleRow,
+                  isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs,
                 ]}
               >
-                <View style={[ExtraStyles.bubble, isMine ? ExtraStyles.bubbleMine : ExtraStyles.bubbleTheirs]}>
-                  <Text style={isMine ? ExtraStyles.bubbleTextMine : ExtraStyles.bubbleTextTheirs}>
+                <View
+                  style={[
+                    styles.bubble,
+                    isMine ? styles.bubbleMine : styles.bubbleTheirs,
+                  ]}
+                >
+                  <Text
+                    style={isMine ? styles.bubbleTextMine : styles.bubbleTextTheirs}
+                  >
                     {item.content}
                   </Text>
                   <Text
                     style={[
-                      ExtraStyles.bubbleTime,
-                      isMine ? ExtraStyles.bubbleTimeMine : ExtraStyles.bubbleTimeTheirs,
+                      styles.bubbleTime,
+                      isMine ? styles.bubbleTimeMine : styles.bubbleTimeTheirs,
                     ]}
                   >
                     {formatTime(item.createdAt)}
@@ -145,21 +174,27 @@ export default function ChatDetailScreen() {
           }}
         />
 
-        <View style={ExtraStyles.composerRow}>
+        {/* ============ Composer ============ */}
+        <View style={styles.composerRow}>
           <TextInput
-            style={ExtraStyles.composerInput}
+            style={styles.composerInput}
             value={input}
             onChangeText={setInput}
             placeholder="Nhập tin nhắn..."
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={COLORS.textSecondary}
             multiline
           />
           <Pressable
-            style={[ExtraStyles.sendButton, (sending || !input.trim()) && ExtraStyles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (sending || !input.trim()) && styles.sendButtonDisabled,
+            ]}
             onPress={handleSend}
             disabled={sending || !input.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Gửi tin nhắn"
           >
-            <Text style={ExtraStyles.sendButtonText}>➤</Text>
+            <Text style={styles.sendButtonText}>➤</Text>
           </Pressable>
         </View>
       </SafeAreaView>

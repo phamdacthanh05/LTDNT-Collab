@@ -4,40 +4,49 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessageBox } from '../../components/MessageBox';
 import { useRoleGuard } from '../../hooks/use-role-guard';
 import {
-  confirmDevTopup, createTopup, fetchWallet, fetchWalletTransactions, syncTopup,
-  type TopupSyncResult, type WalletInfo, type WalletTransaction,
+  confirmDevTopup,
+  createTopup,
+  fetchWallet,
+  fetchWalletTransactions,
+  syncTopup,
+  type TopupSyncResult,
+  type WalletInfo,
+  type WalletTransaction,
 } from '../../services/wallet.api';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
+import { COLORS } from '../../styles/GlobalStyles';
+import { WalletStyles as styles } from '../../styles/WalletStyles';
+import { formatDate, formatMoney } from '../../utils/format';
 
 const PRESETS = [50000, 100000, 200000, 500000, 1000000];
-
-function formatMoney(value: string | number) {
-  const n = Number(value);
-  return Number.isFinite(n) ? `${n.toLocaleString('vi-VN')}đ` : String(value);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
-}
 
 const TX_TITLE: Record<WalletTransaction['type'], string> = {
   TOPUP: 'Nạp tiền qua MoMo',
   PURCHASE: 'Mua hàng',
   REFUND: 'Hoàn tiền',
 };
+
 const STATUS_LABEL: Record<WalletTransaction['status'], string> = {
   PENDING: 'Chờ MoMo xác nhận',
   SUCCESS: 'Thành công',
   FAILED: 'Thất bại',
+};
+
+const STATUS_COLOR: Record<WalletTransaction['status'], string> = {
+  PENDING: COLORS.warning,
+  SUCCESS: COLORS.success,
+  FAILED: COLORS.danger,
 };
 
 export default function WalletScreen() {
@@ -83,14 +92,24 @@ export default function WalletScreen() {
   const reportResult = async (result: TopupSyncResult) => {
     await load();
     if (result.credited || result.status === 'SUCCESS') {
-      showMessage({ type: 'success', title: 'Nạp tiền thành công', message: 'Số dư ví của bạn đã được cập nhật.' });
+      showMessage({
+        type: 'success',
+        title: 'Nạp tiền thành công',
+        message: 'Số dư ví của bạn đã được cập nhật.',
+      });
     } else if (result.status === 'FAILED') {
-      showMessage({ type: 'error', title: 'Nạp tiền không thành công', message: result.message || 'Giao dịch đã bị huỷ hoặc thất bại, bạn chưa bị trừ tiền.' });
+      showMessage({
+        type: 'error',
+        title: 'Nạp tiền không thành công',
+        message:
+          result.message || 'Giao dịch đã bị huỷ hoặc thất bại, bạn chưa bị trừ tiền.',
+      });
     } else {
       showMessage({
         type: 'info',
         title: 'Chưa ghi nhận thanh toán',
-        message: 'MoMo chưa xác nhận giao dịch. Nếu bạn đã thanh toán xong, hãy bấm "Kiểm tra" ở giao dịch trong danh sách bên dưới sau ít phút.',
+        message:
+          'MoMo chưa xác nhận giao dịch. Nếu bạn đã thanh toán xong, hãy bấm "Kiểm tra" ở giao dịch trong danh sách bên dưới sau ít phút.',
       });
     }
   };
@@ -98,11 +117,19 @@ export default function WalletScreen() {
   const handleTopup = async (dev = false) => {
     if (!wallet) return;
     if (amount < wallet.minTopup) {
-      showMessage({ type: 'warning', title: 'Số tiền chưa hợp lệ', message: `Số tiền nạp tối thiểu ${formatMoney(wallet.minTopup)}.` });
+      showMessage({
+        type: 'warning',
+        title: 'Số tiền chưa hợp lệ',
+        message: `Số tiền nạp tối thiểu ${formatMoney(wallet.minTopup)}.`,
+      });
       return;
     }
     if (amount > wallet.maxTopup) {
-      showMessage({ type: 'warning', title: 'Số tiền chưa hợp lệ', message: `Số tiền nạp tối đa ${formatMoney(wallet.maxTopup)} mỗi lần.` });
+      showMessage({
+        type: 'warning',
+        title: 'Số tiền chưa hợp lệ',
+        message: `Số tiền nạp tối đa ${formatMoney(wallet.maxTopup)} mỗi lần.`,
+      });
       return;
     }
 
@@ -137,43 +164,83 @@ export default function WalletScreen() {
 
   if (!allowed || loading || !wallet) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={GlobalStyles.topBackText}>‹ Quay lại</Text>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar đồng bộ Dashboard ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
         </Pressable>
-        <Text style={[ExtraStyles.screenHeaderTitle, { marginTop: 6 }]}>Ví của tôi</Text>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>VÍ CỦA TÔI</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Số dư & giao dịch
+          </Text>
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
       >
-        <View style={ExtraStyles.walletCard}>
-          <Text style={ExtraStyles.walletLabel}>Số dư ví</Text>
-          <Text style={ExtraStyles.walletAmount}>{formatMoney(wallet.balance)}</Text>
+        {/* ============ Hero: Số dư ============ */}
+        <View style={styles.walletHero}>
+          <View style={styles.walletHeroBlobA} />
+          <View style={styles.walletHeroBlobB} />
+
+          <Text style={styles.walletHeroLabel}>SỐ DƯ KHẢ DỤNG</Text>
+          <Text style={styles.walletHeroAmount}>{formatMoney(wallet.balance)}</Text>
+          <Text style={styles.walletHeroSub}>
+            Dùng để mua sản phẩm trực tiếp — không cần trả MoMo cho từng đơn.
+          </Text>
+
+          {wallet.devPayment && (
+            <View style={styles.walletHeroChipRow}>
+              <Text style={styles.walletHeroChipText}>🧪 Chế độ dev đang bật</Text>
+            </View>
+          )}
         </View>
 
-        <Text style={[GlobalStyles.descTitle, { marginHorizontal: 16, marginBottom: 10 }]}>Nạp tiền vào ví</Text>
-        <View style={GlobalStyles.box}>
-          <View style={ExtraStyles.amountChipRow}>
+        {/* ============ Nạp tiền ============ */}
+        <Text style={styles.sectionTitle}>NẠP TIỀN VÀO VÍ</Text>
+        <View style={styles.card}>
+          {/* Preset chips */}
+          <View style={styles.amountChipRow}>
             {PRESETS.map((v) => {
               const active = amount === v;
               return (
                 <Pressable
                   key={v}
-                  style={[ExtraStyles.amountChip, active && ExtraStyles.amountChipActive]}
+                  style={[styles.amountChip, active && styles.amountChipActive]}
                   onPress={() => setAmountText(String(v))}
                 >
-                  <Text style={[ExtraStyles.amountChipText, active && ExtraStyles.amountChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.amountChipText,
+                      active && styles.amountChipTextActive,
+                    ]}
+                  >
                     {formatMoney(v)}
                   </Text>
                 </Pressable>
@@ -181,81 +248,135 @@ export default function WalletScreen() {
             })}
           </View>
 
-          <Text style={GlobalStyles.inputLabel}>Hoặc nhập số tiền khác (đ)</Text>
+          {/* Input số tiền */}
+          <Text style={styles.inputLabel}>Hoặc nhập số tiền khác (đ)</Text>
           <TextInput
-            style={GlobalStyles.input}
+            style={styles.input}
             value={amountText}
             onChangeText={(t) => setAmountText(t.replace(/\D/g, ''))}
             keyboardType="number-pad"
             placeholder={`Tối thiểu ${wallet.minTopup.toLocaleString('vi-VN')}`}
+            placeholderTextColor={COLORS.textSecondary}
             editable={!topping}
           />
-          <Text style={ExtraStyles.readonlyNote}>
+          <Text style={styles.inputNote}>
             Thanh toán bằng ví MoMo. Tiền chỉ vào ví sau khi MoMo xác nhận. Mua sản phẩm sẽ được trừ trực tiếp từ số dư này.
           </Text>
 
+          {/* Nút nạp MoMo */}
           <Pressable
-            style={({ pressed }) => [GlobalStyles.button, topping && { opacity: 0.6 }, pressed && GlobalStyles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              topping && { opacity: 0.6 },
+              pressed && styles.pressed,
+            ]}
             onPress={() => handleTopup(false)}
             disabled={topping}
+            accessibilityRole="button"
           >
             {topping ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={GlobalStyles.buttonText}>NẠP {amount > 0 ? formatMoney(amount) : ''} QUA MOMO</Text>
+              <Text style={styles.primaryBtnText}>
+                NẠP {amount > 0 ? formatMoney(amount) : ''} QUA MOMO
+              </Text>
             )}
           </Pressable>
 
+          {/* Nút nạp dev */}
           {wallet.devPayment && (
             <Pressable
-              style={[GlobalStyles.buttonOutline, { marginTop: 10 }]}
+              style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
               onPress={() => handleTopup(true)}
               disabled={topping}
             >
-              <Text style={GlobalStyles.buttonOutlineText}>🧪 Nạp thử (dev, không trừ tiền thật)</Text>
+              <Text style={styles.outlineBtnText}>
+                🧪 Nạp thử (dev, không trừ tiền thật)
+              </Text>
             </Pressable>
           )}
         </View>
 
-        <Text style={[GlobalStyles.descTitle, { marginHorizontal: 16, marginTop: 20, marginBottom: 10 }]}>
-          Lịch sử giao dịch
-        </Text>
+        {/* ============ Lịch sử giao dịch ============ */}
+        <Text style={styles.sectionTitle}>LỊCH SỬ GIAO DỊCH</Text>
+
         {transactions.length === 0 ? (
-          <Text style={[GlobalStyles.emptyText, { textAlign: 'center' }]}>Chưa có giao dịch nào.</Text>
+          <View style={styles.emptyTx}>
+            <Text style={styles.emptyTxIcon}>📭</Text>
+            <Text style={styles.emptyTxTitle}>Chưa có giao dịch nào</Text>
+            <Text style={styles.emptyTxText}>
+              Các giao dịch nạp tiền và mua hàng sẽ xuất hiện tại đây.
+            </Text>
+          </View>
         ) : (
           transactions.map((t) => {
             const isIn = t.type !== 'PURCHASE';
             const ok = t.status === 'SUCCESS';
             const amountStyle = !ok
-              ? ExtraStyles.txAmountMuted
-              : isIn ? ExtraStyles.txAmountPlus : ExtraStyles.txAmountMinus;
+              ? styles.txAmountMuted
+              : isIn
+              ? styles.txAmountPlus
+              : styles.txAmountMinus;
+
+            const iconWrapStyle = !ok
+              ? styles.txIconWrapMuted
+              : isIn
+              ? styles.txIconWrapPlus
+              : styles.txIconWrapMinus;
+
+            const icon = !ok ? '⏳' : isIn ? '↓' : '↑';
+
             return (
-              <View key={t.id} style={ExtraStyles.txRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={ExtraStyles.txTitle}>{TX_TITLE[t.type]}</Text>
-                  <Text style={ExtraStyles.txMeta}>
-                    {formatDate(t.createdAt)} · {STATUS_LABEL[t.status]}
-                  </Text>
+              <View key={t.id} style={styles.txRow}>
+                <View style={[styles.txIconWrap, iconWrapStyle]}>
+                  <Text style={styles.txIcon}>{icon}</Text>
+                </View>
+
+                <View style={styles.txBody}>
+                  <Text style={styles.txTitle}>{TX_TITLE[t.type]}</Text>
+                  <Text style={styles.txMeta}>{formatDate(t.createdAt)}</Text>
+
+                  <View style={styles.txStatusRow}>
+                    <View
+                      style={[
+                        styles.txStatusDot,
+                        { backgroundColor: STATUS_COLOR[t.status] },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.txStatusText,
+                        { color: STATUS_COLOR[t.status] },
+                      ]}
+                    >
+                      {STATUS_LABEL[t.status]}
+                    </Text>
+                  </View>
+
                   {t.status === 'PENDING' && t.type === 'TOPUP' && (
                     <Pressable
-                      style={[ExtraStyles.smallButton, { flex: 0, alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 14 }]}
+                      style={({ pressed }) => [styles.checkBtn, pressed && styles.pressed]}
                       onPress={() => handleCheck(t.id)}
                       disabled={checkingId === t.id}
                     >
                       {checkingId === t.id ? (
-                        <ActivityIndicator color={COLORS.primary} />
+                        <ActivityIndicator color={COLORS.primaryDark} size="small" />
                       ) : (
-                        <Text style={ExtraStyles.smallButtonText}>Kiểm tra</Text>
+                        <Text style={styles.checkBtnText}>Kiểm tra</Text>
                       )}
                     </Pressable>
                   )}
                 </View>
+
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={amountStyle}>
-                    {isIn ? '+' : '−'}{formatMoney(t.amount)}
+                  <Text style={[styles.txAmount, amountStyle]}>
+                    {isIn ? '+' : '−'}
+                    {formatMoney(t.amount)}
                   </Text>
                   {ok && t.balanceAfter !== null && (
-                    <Text style={ExtraStyles.txMeta}>Dư: {formatMoney(t.balanceAfter)}</Text>
+                    <Text style={styles.txBalanceAfter}>
+                      Dư: {formatMoney(t.balanceAfter)}
+                    </Text>
                   )}
                 </View>
               </View>

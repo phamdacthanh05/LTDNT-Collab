@@ -1,13 +1,25 @@
-// Admin: xem số tài khoản còn trong kho và nhập thêm tài khoản (1 lần có thể dán hàng chục nghìn dòng).
+// Admin: xem số tài khoản còn trong kho và nhập thêm tài khoản.
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessageBox } from '../../components/MessageBox';
 import { useRoleGuard } from '../../hooks/use-role-guard';
-import { fetchStockProducts, importAccounts, type AdminStockProduct } from '../../services/adminStock.api';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
+import {
+  fetchStockProducts,
+  importAccounts,
+  type AdminStockProduct,
+} from '../../services/adminStock.api';
+import { AdminStyles as styles } from '../../styles/AdminStyles';
+import { COLORS } from '../../styles/GlobalStyles';
 
 export default function AdminAccountsScreen() {
   const router = useRouter();
@@ -48,11 +60,19 @@ export default function AdminAccountsScreen() {
 
   const handleImport = async () => {
     if (!selected) {
-      showMessage({ type: 'warning', title: 'Chưa chọn sản phẩm', message: 'Hãy chọn sản phẩm cần nhập tài khoản ở danh sách phía trên.' });
+      showMessage({
+        type: 'warning',
+        title: 'Chưa chọn sản phẩm',
+        message: 'Hãy chọn sản phẩm cần nhập tài khoản ở danh sách phía trên.',
+      });
       return;
     }
     if (lineCount === 0) {
-      showMessage({ type: 'warning', title: 'Chưa có dữ liệu', message: 'Hãy dán danh sách tài khoản, mỗi dòng dạng email|matkhau.' });
+      showMessage({
+        type: 'warning',
+        title: 'Chưa có dữ liệu',
+        message: 'Hãy dán danh sách tài khoản, mỗi dòng dạng email|matkhau.',
+      });
       return;
     }
     setImporting(true);
@@ -68,7 +88,10 @@ export default function AdminAccountsScreen() {
           (r.invalid > 0 ? `\n\nCó ${r.invalid} dòng sai định dạng đã bị bỏ qua.` : ''),
       });
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Không nhập được tài khoản.', 'Nhập kho thất bại');
+      showError(
+        err instanceof Error ? err.message : 'Không nhập được tài khoản.',
+        'Nhập kho thất bại'
+      );
     } finally {
       setImporting(false);
     }
@@ -76,55 +99,107 @@ export default function AdminAccountsScreen() {
 
   if (!allowed || loading) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <Pressable onPress={() => router.replace('/')}>
-          <Text style={GlobalStyles.topBackText}>‹ Trang chủ</Text>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
         </Pressable>
-        <Text style={[ExtraStyles.screenHeaderTitle, { marginTop: 6 }]}>Kho tài khoản</Text>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>QUẢN TRỊ · KHO</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Kho tài khoản
+          </Text>
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
       >
-        <Text style={[GlobalStyles.descTitle, { marginHorizontal: 16, marginBottom: 10 }]}>1. Chọn sản phẩm</Text>
-        {products.map((p) => {
-          const active = p.id === selectedId;
-          return (
-            <Pressable
-              key={p.id}
-              style={[ExtraStyles.stockRow, active && ExtraStyles.stockRowActive]}
-              onPress={() => setSelectedId(p.id)}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={ExtraStyles.stockName}>{p.name}</Text>
-                <Text style={ExtraStyles.stockMeta}>{p.category || 'Chưa phân loại'}</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[ExtraStyles.stockCount, p.available === 0 && ExtraStyles.stockCountEmpty]}>
-                  {p.available.toLocaleString('vi-VN')}
-                </Text>
-                <Text style={ExtraStyles.stockMeta}>còn trong kho</Text>
-              </View>
-            </Pressable>
-          );
-        })}
-
-        <Text style={[GlobalStyles.descTitle, { marginHorizontal: 16, marginTop: 14, marginBottom: 10 }]}>
-          2. Dán danh sách tài khoản
+        {/* ============ Bước 1: Chọn sản phẩm ============ */}
+        <Text style={[styles.sectionTitle, styles.sectionTitleFirst]}>
+          BƯỚC 1 · CHỌN SẢN PHẨM
         </Text>
-        <View style={GlobalStyles.box}>
+        {products.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyIcon}>📦</Text>
+            <Text style={styles.emptyTitle}>Chưa có sản phẩm nào</Text>
+            <Text style={styles.emptyText}>
+              Hãy thêm sản phẩm trước khi nhập kho tài khoản.
+            </Text>
+          </View>
+        ) : (
+          products.map((p) => {
+            const active = p.id === selectedId;
+            return (
+              <Pressable
+                key={p.id}
+                style={({ pressed }) => [
+                  styles.stockRow,
+                  active && styles.stockRowActive,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => setSelectedId(p.id)}
+              >
+                <View style={styles.stockBody}>
+                  <Text style={styles.stockName} numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                  <Text style={styles.stockMeta}>
+                    {p.category || 'Chưa phân loại'}
+                  </Text>
+                </View>
+                <View style={styles.stockCountWrap}>
+                  <Text
+                    style={[
+                      styles.stockCount,
+                      p.available === 0 && styles.stockCountEmpty,
+                    ]}
+                  >
+                    {p.available.toLocaleString('vi-VN')}
+                  </Text>
+                  <Text style={styles.stockCountLabel}>còn trong kho</Text>
+                </View>
+              </Pressable>
+            );
+          })
+        )}
+
+        {/* ============ Bước 2: Dán danh sách ============ */}
+        <Text style={[styles.sectionTitle, { marginTop: 22 }]}>
+          BƯỚC 2 · DÁN DANH SÁCH TÀI KHOẢN
+        </Text>
+        <Text style={styles.sectionHint}>
+          Mỗi dòng 1 tài khoản, dạng <Text style={styles.importHintStrong}>email|matkhau</Text> (có thể thêm |ghi chú).
+          Dòng sai định dạng sẽ bị bỏ qua.
+        </Text>
+
+        <View style={styles.card}>
           <TextInput
-            style={ExtraStyles.importInput}
+            style={styles.importInput}
             multiline
             value={text}
             onChangeText={setText}
@@ -134,20 +209,34 @@ export default function AdminAccountsScreen() {
             autoCorrect={false}
             editable={!importing}
           />
-          <Text style={ExtraStyles.importHint}>
-            Mỗi dòng 1 tài khoản, dạng email|matkhau (có thể thêm |ghi chú). Dòng sai định dạng sẽ bị bỏ qua.
-            {'\n'}Đã nhập: {lineCount.toLocaleString('vi-VN')} dòng
-            {selected ? ` → "${selected.name}"` : ''}
+
+          <Text style={styles.importHint}>
+            Đã nhập:{' '}
+            <Text style={styles.importHintStrong}>
+              {lineCount.toLocaleString('vi-VN')} dòng
+            </Text>
+            {selected ? (
+              <>
+                {' → '}
+                <Text style={styles.importHintStrong}>{selected.name}</Text>
+              </>
+            ) : null}
           </Text>
+
           <Pressable
-            style={({ pressed }) => [GlobalStyles.button, { marginTop: 14 }, pressed && GlobalStyles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              importing && { opacity: 0.6 },
+              pressed && !importing && styles.pressed,
+            ]}
             onPress={handleImport}
             disabled={importing}
+            accessibilityRole="button"
           >
             {importing ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={GlobalStyles.buttonText}>NHẬP VÀO KHO</Text>
+              <Text style={styles.primaryBtnText}>NHẬP VÀO KHO</Text>
             )}
           </Pressable>
         </View>

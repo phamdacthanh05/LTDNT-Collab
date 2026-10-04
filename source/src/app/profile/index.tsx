@@ -1,33 +1,28 @@
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    ScrollView,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessageBox } from '../../components/MessageBox';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    changeMyPassword,
-    fetchMyOrderHistory,
-    fetchProfile,
-    updateProfile,
-    type Profile,
-    type ProfileOrder,
+  changeMyPassword,
+  fetchMyOrderHistory,
+  fetchProfile,
+  updateProfile,
+  type Profile,
+  type ProfileOrder,
 } from '../../services/profile.api';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-
-function formatMoney(value: string) {
-  const n = Number(value);
-  return Number.isFinite(n) ? `${n.toLocaleString('vi-VN')}đ` : value;
-}
+import { COLORS } from '../../styles/GlobalStyles';
+import { ProfileStyles as styles } from '../../styles/ProfileStyles';
+import { formatMoney } from '../../utils/format';
 
 const ORDER_STATUS_LABEL: Record<ProfileOrder['status'], string> = {
   PENDING: 'Chờ thanh toán',
@@ -36,10 +31,13 @@ const ORDER_STATUS_LABEL: Record<ProfileOrder['status'], string> = {
   CANCELLED: 'Đã huỷ',
 };
 
-const ORDER_STATUS_COLOR: Record<ProfileOrder['status'], { bg: string; text: string }> = {
+const ORDER_STATUS_COLOR: Record<
+  ProfileOrder['status'],
+  { bg: string; text: string }
+> = {
   PENDING: { bg: COLORS.warningSoft, text: COLORS.warning },
   PAID: { bg: COLORS.successSoft, text: COLORS.success },
-  DELIVERED: { bg: COLORS.primarySoft, text: COLORS.primary },
+  DELIVERED: { bg: COLORS.primarySoft, text: COLORS.primaryDark },
   CANCELLED: { bg: COLORS.dangerSoft, text: COLORS.danger },
 };
 
@@ -60,7 +58,7 @@ export default function ProfileScreen() {
 
   // form chỉnh sửa thông tin
   const [fullName, setFullName] = useState('');
-  const [address, setAddress] = useState(''); // MỚI: địa chỉ giao hàng
+  const [address, setAddress] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
 
   // form đổi mật khẩu
@@ -79,7 +77,7 @@ export default function ProfileScreen() {
       const data = await fetchProfile();
       setProfile(data);
       setFullName(data.fullName);
-      setAddress(data.address || ''); // MỚI
+      setAddress(data.address || '');
     } catch (err: any) {
       setError(err.message);
     }
@@ -128,15 +126,27 @@ export default function ProfileScreen() {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      showMessage({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại, mật khẩu mới và xác nhận.' });
+      showMessage({
+        type: 'warning',
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại, mật khẩu mới và xác nhận.',
+      });
       return;
     }
     if (newPassword.length < 6) {
-      showMessage({ type: 'warning', title: 'Mật khẩu quá ngắn', message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' });
+      showMessage({
+        type: 'warning',
+        title: 'Mật khẩu quá ngắn',
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+      });
       return;
     }
     if (newPassword !== confirmPassword) {
-      showMessage({ type: 'warning', title: 'Mật khẩu không khớp', message: 'Mật khẩu xác nhận không giống mật khẩu mới.' });
+      showMessage({
+        type: 'warning',
+        title: 'Mật khẩu không khớp',
+        message: 'Mật khẩu xác nhận không giống mật khẩu mới.',
+      });
       return;
     }
     setChangingPassword(true);
@@ -153,92 +163,180 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/auth/login');
+  // ⭐ SỬA: dùng showMessage để xác nhận trước khi đăng xuất
+  const handleLogout = () => {
+    showMessage({
+      type: 'warning',
+      title: 'Đăng xuất?',
+      message: 'Bạn có chắc muốn đăng xuất khỏi tài khoản này?',
+      confirmText: 'Đăng xuất',
+      cancelText: 'Ở lại',
+      onConfirm: async () => {
+        try {
+          await logout();
+          router.replace('/auth/login');
+        } catch (err: any) {
+          showError(err?.message || 'Không thể đăng xuất.');
+        }
+      },
+    });
   };
 
   if (loading) {
     return (
-      <View style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (error || !profile) {
     return (
-      <View style={GlobalStyles.center}>
-        <Text style={GlobalStyles.errorText}>{error || 'Không tải được thông tin'}</Text>
-      </View>
+      <SafeAreaView style={styles.loadingScreen}>
+        <Text style={{ color: COLORS.danger, fontSize: 14 }}>
+          {error || 'Không tải được thông tin'}
+        </Text>
+      </SafeAreaView>
     );
   }
 
+  const isAdmin = profile.role === 'ADMIN';
+  const initials = (profile.fullName || '?').trim().charAt(0).toUpperCase();
+
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <View style={GlobalStyles.productHeaderRow}>
-          <Text style={ExtraStyles.screenHeaderTitle}>Tài khoản của tôi</Text>
-          <Pressable onPress={handleLogout} style={GlobalStyles.logoutButton}>
-            <Text style={GlobalStyles.logoutText}>Đăng xuất</Text>
-          </Pressable>
+    <SafeAreaView style={styles.main} edges={['top']}>
+      {/* ============ Top Bar ============ */}
+      <View style={styles.topBar}>
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>{isAdmin ? 'QUẢN TRỊ VIÊN' : 'TÀI KHOẢN'}</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            {isAdmin ? 'Hồ sơ quản trị' : 'Tài khoản của tôi'}
+          </Text>
+        </View>
+
+        {/* ⭐ SỬA: nút đăng xuất có icon + chữ, dễ nhìn, ổn định trên mọi thiết bị */}
+        <Pressable
+          onPress={handleLogout}
+          style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Đăng xuất"
+        >
+          <Text style={styles.logoutIcon}>⏻</Text>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
+        </Pressable>
+      </View>
+
+      {/* ============ Profile Hero (avatar + tên + email) ============ */}
+      <View style={styles.profileHero}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials}</Text>
+        </View>
+        <View style={styles.profileHeroBody}>
+          <Text style={styles.profileName} numberOfLines={1}>
+            {profile.fullName}
+          </Text>
+          <Text style={styles.profileEmail} numberOfLines={1}>
+            {profile.email}
+          </Text>
+          <View style={[styles.rolePill, isAdmin && styles.rolePillAdmin]}>
+            <Text
+              style={[styles.rolePillText, isAdmin && styles.rolePillTextAdmin]}
+            >
+              {isAdmin ? '👑 Quản trị viên' : '🛍️ Khách hàng'}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {/* Số dư ví CHỈ hiển thị với khách. Admin không có số dư (tiền thu chi quản lý trong MoMo). */}
-      {profile.role !== 'ADMIN' && (
-        <View style={ExtraStyles.walletCard}>
-          <Text style={ExtraStyles.walletLabel}>Số dư ví</Text>
-          <Text style={ExtraStyles.walletAmount}>{formatMoney(profile.walletBalance ?? '0')}</Text>
+      {/* ============ Wallet Hero (chỉ buyer) ============ */}
+      {!isAdmin && (
+        <View style={styles.walletHero}>
+          <View style={styles.walletHeroBlobA} />
+          <View style={styles.walletHeroBlobB} />
+
+          <Text style={styles.walletHeroLabel}>SỐ DƯ VÍ</Text>
+          <Text style={styles.walletHeroAmount}>
+            {formatMoney(profile.walletBalance ?? '0')}
+          </Text>
+
           <Pressable
-            style={ExtraStyles.walletTopupButton}
             onPress={() => router.push('/wallet' as any)}
+            style={({ pressed }) => [styles.walletHeroBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
           >
-            <Text style={ExtraStyles.walletTopupButtonText}>+ Nạp tiền / Lịch sử ví</Text>
+            <Text style={styles.walletHeroBtnText}>＋ Nạp tiền / Lịch sử ví</Text>
           </Pressable>
         </View>
       )}
 
-      {profile.role === 'ADMIN' && (
-        <View>
+      {/* ============ Admin Quick Actions ============ */}
+      {isAdmin && (
+        <>
+          <Text style={styles.adminSectionTitle}>TÁC VỤ QUẢN TRỊ</Text>
+
+          {/* ⭐ SỬA: thêm `as any` cho các route admin */}
           <Pressable
-            style={[GlobalStyles.button, { marginHorizontal: 16, marginBottom: 8 }]}
-            onPress={() => router.push('/admin/support-list')}
+            onPress={() => router.push('/admin/support-list' as any)}
+            style={({ pressed }) => [styles.adminActionCard, pressed && styles.pressed]}
           >
-            <Text style={GlobalStyles.buttonText}>QUẢN LÝ HỘI THOẠI KHÁCH HÀNG</Text>
+            <View style={styles.adminActionIcon}>
+              <Text style={styles.adminActionIconText}>💬</Text>
+            </View>
+            <View style={styles.adminActionBody}>
+              <Text style={styles.adminActionLabel}>Hội thoại khách hàng</Text>
+              <Text style={styles.adminActionHint}>Xem & trả lời tin nhắn</Text>
+            </View>
+            <Text style={styles.adminActionChevron}>›</Text>
           </Pressable>
+
           <Pressable
-            style={[GlobalStyles.button, { marginHorizontal: 16, marginBottom: 8 }]}
             onPress={() => router.push('/admin/products' as any)}
+            style={({ pressed }) => [styles.adminActionCard, pressed && styles.pressed]}
           >
-            <Text style={GlobalStyles.buttonText}>QUẢN LÝ SẢN PHẨM</Text>
+            <View style={styles.adminActionIcon}>
+              <Text style={styles.adminActionIconText}>🛍️</Text>
+            </View>
+            <View style={styles.adminActionBody}>
+              <Text style={styles.adminActionLabel}>Quản lý sản phẩm</Text>
+              <Text style={styles.adminActionHint}>Thêm, sửa, xoá sản phẩm</Text>
+            </View>
+            <Text style={styles.adminActionChevron}>›</Text>
           </Pressable>
+
           <Pressable
-            style={[GlobalStyles.button, { marginHorizontal: 16, marginBottom: 4 }]}
             onPress={() => router.push('/admin/accounts' as any)}
+            style={({ pressed }) => [styles.adminActionCard, pressed && styles.pressed]}
           >
-            <Text style={GlobalStyles.buttonText}>QUẢN LÝ KHO TÀI KHOẢN</Text>
+            <View style={styles.adminActionIcon}>
+              <Text style={styles.adminActionIconText}>🗄️</Text>
+            </View>
+            <View style={styles.adminActionBody}>
+              <Text style={styles.adminActionLabel}>Kho tài khoản</Text>
+              <Text style={styles.adminActionHint}>Nhập & kiểm soát kho</Text>
+            </View>
+            <Text style={styles.adminActionChevron}>›</Text>
           </Pressable>
-        </View>
+        </>
       )}
 
-      <View style={ExtraStyles.tabBar}>
+      {/* ============ Tab Bar ============ */}
+      <View style={styles.tabBar}>
         {(
           [
             { key: 'info', label: 'Thông tin' },
-            { key: 'password', label: 'Đổi mật khẩu' },
-            ...(profile.role === 'ADMIN' ? [] : [{ key: 'orders', label: 'Đơn hàng' }]),
+            { key: 'password', label: 'Mật khẩu' },
+            ...(isAdmin ? [] : [{ key: 'orders', label: 'Đơn hàng' }]),
           ] as { key: Tab; label: string }[]
         ).map((t) => (
           <Pressable
             key={t.key}
-            style={[ExtraStyles.tabButton, tab === t.key && ExtraStyles.tabButtonActive]}
+            style={[styles.tabButton, tab === t.key && styles.tabButtonActive]}
             onPress={() => setTab(t.key)}
           >
             <Text
               style={[
-                ExtraStyles.tabButtonText,
-                tab === t.key && ExtraStyles.tabButtonTextActive,
+                styles.tabButtonText,
+                tab === t.key && styles.tabButtonTextActive,
               ]}
             >
               {t.label}
@@ -247,130 +345,188 @@ export default function ProfileScreen() {
         ))}
       </View>
 
+      {/* ============ TAB: INFO ============ */}
       {tab === 'info' && (
-        <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}>
-          <View style={ExtraStyles.infoCard}>
-            <View style={ExtraStyles.infoRow}>
-              <Text style={ExtraStyles.infoLabel}>Email</Text>
-              <Text style={ExtraStyles.infoValue}>{profile.email}</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue} numberOfLines={1}>
+                {profile.email}
+              </Text>
             </View>
-            <View style={[ExtraStyles.infoRow, ExtraStyles.infoRowLast]}>
-              <Text style={ExtraStyles.infoLabel}>Email không thể thay đổi</Text>
-            </View>
+            <Text style={styles.infoHint}>
+              Email không thể thay đổi. Liên hệ hỗ trợ nếu cần.
+            </Text>
           </View>
 
-          <View style={GlobalStyles.box}>
-            <Text style={GlobalStyles.inputLabel}>Họ và tên</Text>
+          <Text style={styles.sectionTitle}>THÔNG TIN CÁ NHÂN</Text>
+          <View style={styles.card}>
+            <Text style={styles.inputLabel}>Họ và tên</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={fullName}
               onChangeText={setFullName}
               placeholder="Họ và tên"
+              placeholderTextColor={COLORS.textSecondary}
             />
-            <Text style={GlobalStyles.inputLabel}>Địa chỉ giao hàng</Text>
+
+            <Text style={styles.inputLabel}>Địa chỉ giao hàng</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={[styles.input, styles.inputMultiline]}
               value={address}
               onChangeText={setAddress}
               placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+              placeholderTextColor={COLORS.textSecondary}
               multiline
             />
-            <Pressable style={GlobalStyles.button} onPress={handleSaveInfo} disabled={savingInfo}>
+
+            <Pressable
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+              onPress={handleSaveInfo}
+              disabled={savingInfo}
+            >
               {savingInfo ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={GlobalStyles.buttonText}>LƯU THAY ĐỔI</Text>
+                <Text style={styles.primaryBtnText}>LƯU THAY ĐỔI</Text>
               )}
             </Pressable>
           </View>
         </ScrollView>
       )}
 
+      {/* ============ TAB: PASSWORD ============ */}
       {tab === 'password' && (
-        <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}>
-          <View style={GlobalStyles.box}>
-            <Text style={GlobalStyles.inputLabel}>Mật khẩu hiện tại</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.sectionTitle}>ĐỔI MẬT KHẨU</Text>
+          <View style={styles.card}>
+            <Text style={styles.inputLabel}>Mật khẩu hiện tại</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={oldPassword}
               onChangeText={setOldPassword}
               secureTextEntry
               placeholder="Mật khẩu hiện tại"
+              placeholderTextColor={COLORS.textSecondary}
             />
-            <Text style={GlobalStyles.inputLabel}>Mật khẩu mới</Text>
+
+            <Text style={styles.inputLabel}>Mật khẩu mới</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry
               placeholder="Ít nhất 6 ký tự"
+              placeholderTextColor={COLORS.textSecondary}
             />
-            <Text style={GlobalStyles.inputLabel}>Xác nhận mật khẩu mới</Text>
+
+            <Text style={styles.inputLabel}>Xác nhận mật khẩu mới</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
               placeholder="Nhập lại mật khẩu mới"
+              placeholderTextColor={COLORS.textSecondary}
             />
+
             <Pressable
-              style={GlobalStyles.button}
+              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
               onPress={handleChangePassword}
               disabled={changingPassword}
             >
               {changingPassword ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={GlobalStyles.buttonText}>ĐỔI MẬT KHẨU</Text>
+                <Text style={styles.primaryBtnText}>ĐỔI MẬT KHẨU</Text>
               )}
             </Pressable>
           </View>
         </ScrollView>
       )}
 
-      {tab === 'orders' && profile.role !== 'ADMIN' &&
+      {/* ============ TAB: ORDERS ============ */}
+      {tab === 'orders' &&
+        !isAdmin &&
         (ordersLoading ? (
-          <View style={GlobalStyles.center}>
+          <View style={styles.loadingScreen}>
             <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         ) : (
           <FlatList
             data={orders}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               <Pressable
-                style={[GlobalStyles.buttonOutline, { marginHorizontal: 16, marginBottom: 12 }]}
+                style={({ pressed }) => [styles.outlineBtn, pressed && styles.pressed]}
                 onPress={() => router.push('/purchases' as any)}
               >
-                <Text style={GlobalStyles.buttonOutlineText}>🔑 Xem tài khoản đã mua (lịch sử 7 ngày)</Text>
+                <Text style={styles.outlineBtnText}>
+                  🔑 Xem tài khoản đã mua (lịch sử 7 ngày)
+                </Text>
               </Pressable>
             }
             ListEmptyComponent={
-              <View style={GlobalStyles.center}>
-                <Text style={GlobalStyles.emptyText}>Bạn chưa có đơn hàng nào.</Text>
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyIcon}>📦</Text>
+                <Text style={styles.emptyTitle}>Chưa có đơn hàng nào</Text>
+                <Text style={styles.emptyText}>
+                  Các đơn hàng bạn đặt sẽ hiện ở đây để theo dõi.
+                </Text>
+                <Pressable
+                  style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
+                  onPress={() => router.push('/products')}
+                >
+                  <Text style={styles.emptyButtonText}>Xem sản phẩm</Text>
+                </Pressable>
               </View>
             }
             renderItem={({ item }) => {
               const statusColor = ORDER_STATUS_COLOR[item.status];
               return (
-                <View style={ExtraStyles.orderItem}>
-                  <View style={ExtraStyles.orderTopRow}>
-                    <Text style={ExtraStyles.orderId}>#{item.id.slice(0, 8)}</Text>
+                <View style={styles.orderItem}>
+                  <View style={styles.orderTopRow}>
+                    <Text style={styles.orderId}>
+                      #{item.id.slice(0, 8).toUpperCase()}
+                    </Text>
                     <View
-                      style={[ExtraStyles.orderStatusBadge, { backgroundColor: statusColor.bg }]}
+                      style={[
+                        styles.orderStatusBadge,
+                        { backgroundColor: statusColor.bg },
+                      ]}
                     >
-                      <Text style={[ExtraStyles.orderStatusText, { color: statusColor.text }]}>
+                      <Text
+                        style={[
+                          styles.orderStatusText,
+                          { color: statusColor.text },
+                        ]}
+                      >
                         {ORDER_STATUS_LABEL[item.status]}
                       </Text>
                     </View>
                   </View>
+
                   {item.items.map((it) => (
-                    <Text key={it.id} style={ExtraStyles.orderProductLine}>
-                      {it.product.name} x{it.quantity}
+                    <Text key={it.id} style={styles.orderProductLine}>
+                      • {it.product.name}  ×{it.quantity}
                     </Text>
                   ))}
-                  <Text style={ExtraStyles.orderTotal}>{formatMoney(item.totalAmount)}</Text>
+
+                  <View style={styles.orderDivider} />
+                  <Text style={styles.orderTotal}>
+                    {formatMoney(item.totalAmount)}
+                  </Text>
                 </View>
               );
             }}

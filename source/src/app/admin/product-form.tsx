@@ -1,18 +1,28 @@
 // Admin: form THÊM sản phẩm mới (không có ?id) hoặc SỬA sản phẩm (?id=...).
-// Số lượng không nhập tay: nó luôn bằng số tài khoản trong kho (nhập hàng ở màn "Kho tài khoản").
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessageBox } from '../../components/MessageBox';
 import { useRoleGuard } from '../../hooks/use-role-guard';
 import {
-  createProduct, fetchStockProducts, updateProduct, type AdminStockProduct,
+  createProduct,
+  fetchStockProducts,
+  updateProduct,
+  type AdminStockProduct,
 } from '../../services/adminStock.api';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
+import { AdminStyles as styles } from '../../styles/AdminStyles';
+import { COLORS } from '../../styles/GlobalStyles';
 
 export default function AdminProductFormScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -33,7 +43,6 @@ export default function AdminProductFormScreen() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
 
-  // Chế độ sửa: nạp dữ liệu sản phẩm hiện có
   useEffect(() => {
     if (!allowed || !id) return;
     (async () => {
@@ -53,7 +62,9 @@ export default function AdminProductFormScreen() {
         setIsActive(p.isActive);
         setAvailable(p.available);
       } catch (err) {
-        showError(err instanceof Error ? err.message : 'Không tải được sản phẩm.');
+        showError(
+          err instanceof Error ? err.message : 'Không tải được sản phẩm.'
+        );
       } finally {
         setLoading(false);
       }
@@ -64,11 +75,19 @@ export default function AdminProductFormScreen() {
   const handleSave = async () => {
     const priceNumber = Number(price.replace(/\D/g, ''));
     if (!name.trim()) {
-      showMessage({ type: 'warning', title: 'Thiếu thông tin', message: 'Vui lòng nhập tên sản phẩm.' });
+      showMessage({
+        type: 'warning',
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập tên sản phẩm.',
+      });
       return;
     }
     if (!Number.isInteger(priceNumber) || priceNumber < 1) {
-      showMessage({ type: 'warning', title: 'Giá chưa hợp lệ', message: 'Giá phải là số lớn hơn 0 (đơn vị: đồng).' });
+      showMessage({
+        type: 'warning',
+        title: 'Giá chưa hợp lệ',
+        message: 'Giá phải là số lớn hơn 0 (đơn vị: đồng).',
+      });
       return;
     }
 
@@ -85,7 +104,12 @@ export default function AdminProductFormScreen() {
     try {
       if (isEdit && id) {
         const r = await updateProduct(id, payload);
-        showMessage({ type: 'success', title: 'Đã lưu', message: r.message, onConfirm: () => router.back() });
+        showMessage({
+          type: 'success',
+          title: 'Đã lưu',
+          message: r.message,
+          onConfirm: () => router.back(),
+        });
       } else {
         const r = await createProduct(payload);
         showMessage({
@@ -99,7 +123,10 @@ export default function AdminProductFormScreen() {
         });
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Không lưu được sản phẩm.', 'Lưu thất bại');
+      showError(
+        err instanceof Error ? err.message : 'Không lưu được sản phẩm.',
+        'Lưu thất bại'
+      );
     } finally {
       setSaving(false);
     }
@@ -107,62 +134,85 @@ export default function AdminProductFormScreen() {
 
   if (!allowed || loading) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={GlobalStyles.topBackText}>‹ Quay lại</Text>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
         </Pressable>
-        <Text style={[ExtraStyles.screenHeaderTitle, { marginTop: 6 }]}>
-          {isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
-        </Text>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>
+            {isEdit ? 'QUẢN TRỊ · SỬA' : 'QUẢN TRỊ · THÊM MỚI'}
+          </Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            {isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
+          </Text>
+        </View>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <View style={GlobalStyles.box}>
-            <Text style={GlobalStyles.inputLabel}>Tên sản phẩm *</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.card}>
+            <Text style={styles.inputLabel}>Tên sản phẩm *</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={name}
               onChangeText={setName}
               placeholder="VD: Canva Pro 1 tháng"
+              placeholderTextColor={COLORS.textSecondary}
               maxLength={191}
               editable={!saving}
             />
 
-            <Text style={GlobalStyles.inputLabel}>Giá bán (đ) *</Text>
+            <Text style={styles.inputLabel}>Giá bán (đ) *</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={price}
               onChangeText={(t) => setPrice(t.replace(/\D/g, ''))}
               keyboardType="number-pad"
               placeholder="VD: 49000"
+              placeholderTextColor={COLORS.textSecondary}
               editable={!saving}
             />
 
-            <Text style={GlobalStyles.inputLabel}>Danh mục</Text>
+            <Text style={styles.inputLabel}>Danh mục</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={category}
               onChangeText={setCategory}
               placeholder="VD: Canva Pro, Tool, Tài khoản"
+              placeholderTextColor={COLORS.textSecondary}
               maxLength={191}
               editable={!saving}
             />
 
-            <Text style={GlobalStyles.inputLabel}>Link ảnh (tuỳ chọn)</Text>
+            <Text style={styles.inputLabel}>Link ảnh (tuỳ chọn)</Text>
             <TextInput
-              style={GlobalStyles.input}
+              style={styles.input}
               value={imageUrl}
               onChangeText={setImageUrl}
               placeholder="https://..."
+              placeholderTextColor={COLORS.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -170,39 +220,55 @@ export default function AdminProductFormScreen() {
               editable={!saving}
             />
 
-            <Text style={GlobalStyles.inputLabel}>Mô tả</Text>
+            <Text style={styles.inputLabel}>Mô tả</Text>
             <TextInput
-              style={[GlobalStyles.input, { minHeight: 90, textAlignVertical: 'top' }]}
+              style={[styles.input, styles.inputMultiline]}
               value={description}
               onChangeText={setDescription}
               placeholder="Mô tả ngắn về sản phẩm"
+              placeholderTextColor={COLORS.textSecondary}
               multiline
               editable={!saving}
             />
 
-            <View style={ExtraStyles.switchRow}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={GlobalStyles.inputLabel}>Đang bán</Text>
-                <Text style={ExtraStyles.readonlyNote}>Tắt để ẩn sản phẩm khỏi cửa hàng (không xoá).</Text>
+            <View style={styles.switchRow}>
+              <View style={styles.switchLabelWrap}>
+                <Text style={styles.switchLabel}>Đang bán</Text>
+                <Text style={styles.switchHint}>
+                  Tắt để ẩn sản phẩm khỏi cửa hàng (không xoá).
+                </Text>
               </View>
-              <Switch value={isActive} onValueChange={setIsActive} disabled={saving} />
+              <Switch
+                value={isActive}
+                onValueChange={setIsActive}
+                disabled={saving}
+                trackColor={{ false: COLORS.border, true: COLORS.primaryLight }}
+                thumbColor={isActive ? COLORS.primary : '#f4f3f4'}
+              />
             </View>
 
-            <Text style={ExtraStyles.readonlyNote}>
+            <Text style={styles.readonlyNote}>
               {isEdit
                 ? `Số lượng trong kho: ${available.toLocaleString('vi-VN')} (tự tính theo số tài khoản; nhập thêm ở màn "Kho tài khoản").`
                 : 'Số lượng bắt đầu từ 0. Sau khi thêm, hãy nhập tài khoản vào kho để bắt đầu bán.'}
             </Text>
 
             <Pressable
-              style={({ pressed }) => [GlobalStyles.button, saving && { opacity: 0.6 }, pressed && GlobalStyles.buttonPressed]}
+              style={({ pressed }) => [
+                styles.primaryBtn,
+                saving && { opacity: 0.6 },
+                pressed && !saving && styles.pressed,
+              ]}
               onPress={handleSave}
               disabled={saving}
+              accessibilityRole="button"
             >
               {saving ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
-                <Text style={GlobalStyles.buttonText}>{isEdit ? 'LƯU THAY ĐỔI' : 'THÊM SẢN PHẨM'}</Text>
+                <Text style={styles.primaryBtnText}>
+                  {isEdit ? 'LƯU THAY ĐỔI' : 'THÊM SẢN PHẨM'}
+                </Text>
               )}
             </Pressable>
           </View>

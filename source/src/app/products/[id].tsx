@@ -12,14 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../contexts/CartContext';
 import { useRoleGuard } from '../../hooks/use-role-guard';
 import { fetchProductDetail, type Product } from '../../services/api';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-
-function formatPrice(price: string) {
-  const value = Number(price);
-  if (!Number.isFinite(value)) return 'Liên hệ';
-  return `${value.toLocaleString('vi-VN')}đ`;
-}
+import { COLORS } from '../../styles/GlobalStyles';
+import { ProductDetailStyles as styles } from '../../styles/ProductDetailStyles';
+import { formatPrice } from '../../utils/format';
 
 export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -27,38 +22,33 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { addItem } = useCart();
   const { allowed } = useRoleGuard('BUYER');
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState(1); // số lượng người dùng muốn mua
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     let mounted = true;
-
     const load = async () => {
       if (!id) {
         setError('Thiếu mã sản phẩm.');
         setLoading(false);
         return;
       }
-
       setLoading(true);
       setError(null);
-
       try {
         const data = await fetchProductDetail(id);
         if (mounted) setProduct(data);
-      } catch (error) {
-        if (mounted) {
-          setError(error instanceof Error ? error.message : 'Không thể tải sản phẩm.');
-        }
+      } catch (err) {
+        if (mounted)
+          setError(err instanceof Error ? err.message : 'Không thể tải sản phẩm.');
       } finally {
         if (mounted) setLoading(false);
       }
     };
-
     void load();
-
     return () => {
       mounted = false;
     };
@@ -66,7 +56,7 @@ export default function ProductDetailScreen() {
 
   if (loading || !allowed) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
@@ -74,13 +64,12 @@ export default function ProductDetailScreen() {
 
   if (error || !product) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
-        <Text style={GlobalStyles.errorText}>{error || 'Không tìm thấy sản phẩm.'}</Text>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [GlobalStyles.backButton, pressed && GlobalStyles.buttonPressed]}
-        >
-          <Text style={GlobalStyles.backButtonText}>Quay lại</Text>
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={{ color: COLORS.danger, fontSize: 14, marginBottom: 16 }}>
+          {error || 'Không tìm thấy sản phẩm.'}
+        </Text>
+        <Pressable onPress={() => router.back()} style={styles.btnSolid}>
+          <Text style={styles.btnSolidText}>Quay lại</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -88,103 +77,105 @@ export default function ProductDetailScreen() {
 
   const inStock = Number(product.stock) > 0;
 
-  const handleAddToCart = () => {
-    addItem(product, quantity);
-    router.push('/cart');
-  };
-
-  const handleBuyNow = () => {
-    addItem(product, quantity);
-    router.push('/checkout');
-  };
-
   return (
-    <SafeAreaView style={GlobalStyles.detailContainer} edges={['top', 'bottom']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 8 }}
-      >
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Header */}
+      <View style={styles.topBar}>
         <Pressable
           onPress={() => router.back()}
-          style={({ pressed }) => [GlobalStyles.topBack, pressed && GlobalStyles.topBackPressed]}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
         >
-          <Text style={GlobalStyles.topBackText}>‹  Quay lại</Text>
+          <Text style={styles.backButtonText}>‹</Text>
         </Pressable>
+      </View>
 
-        <View style={GlobalStyles.detailImage}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {/* Image */}
+        <View style={styles.imageContainer}>
           {product.imageUrl ? (
             <Image
               source={{ uri: product.imageUrl }}
-              style={GlobalStyles.detailProductImage}
+              style={styles.productImage}
               contentFit="cover"
               transition={150}
             />
           ) : (
-            <Text style={GlobalStyles.detailImageIcon}>🛒</Text>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.imagePlaceholderIcon}>🛒</Text>
+            </View>
           )}
         </View>
 
-        <View style={GlobalStyles.detailCard}>
-          {product.category ? <Text style={GlobalStyles.category}>{product.category}</Text> : null}
-          <Text style={GlobalStyles.name}>{product.name}</Text>
-          <Text style={GlobalStyles.price}>{formatPrice(product.price)}</Text>
+        {/* Info */}
+        <View style={styles.infoCard}>
+          {product.category && <Text style={styles.category}>{product.category}</Text>}
+          <Text style={styles.name}>{product.name}</Text>
+          <Text style={styles.price}>{formatPrice(product.price)}</Text>
 
-          <Text style={[GlobalStyles.stock, !inStock && GlobalStyles.stockOut]}>
+          <Text style={[styles.stockBadge, inStock ? styles.stockIn : styles.stockOut]}>
             {inStock ? `Còn ${product.stock} sản phẩm` : 'Tạm hết hàng'}
           </Text>
 
-          {/* Chọn số lượng muốn mua */}
           {inStock && (
-            <View style={ExtraStyles.qtyRow}>
+            <View style={styles.qtyRow}>
               <Pressable
-                style={ExtraStyles.qtyButton}
+                style={styles.qtyButton}
                 onPress={() => setQuantity((q) => Math.max(1, q - 1))}
               >
-                <Text style={ExtraStyles.qtyButtonText}>−</Text>
+                <Text style={styles.qtyButtonText}>−</Text>
               </Pressable>
-              <Text style={ExtraStyles.qtyValue}>{quantity}</Text>
+              <Text style={styles.qtyValue}>{quantity}</Text>
               <Pressable
-                style={ExtraStyles.qtyButton}
-                onPress={() => setQuantity((q) => Math.min(Number(product.stock), q + 1))}
+                style={styles.qtyButton}
+                onPress={() =>
+                  setQuantity((q) => Math.min(Number(product.stock), q + 1))
+                }
               >
-                <Text style={ExtraStyles.qtyButtonText}>+</Text>
+                <Text style={styles.qtyButtonText}>+</Text>
               </Pressable>
             </View>
           )}
 
-          {product.description ? (
-            <View style={GlobalStyles.descBox}>
-              <Text style={GlobalStyles.descTitle}>Mô tả sản phẩm</Text>
-              <Text style={GlobalStyles.descText}>{product.description}</Text>
+          {product.description && (
+            <View style={styles.descBox}>
+              <Text style={styles.descTitle}>Mô tả sản phẩm</Text>
+              <Text style={styles.descText}>{product.description}</Text>
             </View>
-          ) : null}
+          )}
         </View>
       </ScrollView>
 
-      <View style={[GlobalStyles.footer, { flexDirection: 'row', gap: 10 }]}>
+      {/* Footer Buttons */}
+      <View style={styles.footer}>
         <Pressable
-          style={({ pressed }) => [
-            GlobalStyles.buttonOutline,
-            { flex: 1 },
-            pressed && GlobalStyles.buttonOutlinePressed,
-          ]}
+          style={({ pressed }) => [styles.btnOutline, pressed && styles.pressed]}
           disabled={!inStock}
-          onPress={handleAddToCart}
+          onPress={() => {
+            addItem(product, quantity);
+            router.push('/cart');
+          }}
         >
-          <Text style={GlobalStyles.buttonOutlineText}>Thêm vào giỏ</Text>
+          <Text style={styles.btnOutlineText}>Thêm vào giỏ</Text>
         </Pressable>
 
         <Pressable
           style={({ pressed }) => [
-            GlobalStyles.buyButton,
-            { flex: 1 },
-            !inStock && GlobalStyles.buyButtonDisabled,
-            pressed && inStock && GlobalStyles.buyButtonPressed,
+            styles.btnSolid,
+            !inStock && styles.btnSolidDisabled,
+            pressed && inStock && styles.pressed,
           ]}
           disabled={!inStock}
-          onPress={handleBuyNow}
+          onPress={() => {
+            addItem(product, quantity);
+            router.push('/checkout');
+          }}
         >
-          <Text style={GlobalStyles.buyButtonText}>{inStock ? 'MUA NGAY' : 'HẾT HÀNG'}</Text>
+          <Text style={styles.btnSolidText}>
+            {inStock ? 'MUA NGAY' : 'HẾT HÀNG'}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

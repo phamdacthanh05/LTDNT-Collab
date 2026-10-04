@@ -1,30 +1,48 @@
 import { StyleSheet } from 'react-native';
 
 /**
- * Design system dùng chung cho toàn bộ ứng dụng React Native.
- * Không đặt StyleSheet riêng trong các màn hình nghiệp vụ.
+ * Design System chung cho toàn bộ ứng dụng.
+ * ĐỒNG BỘ với Dashboard (app/index.tsx) - tone XANH NƯỚC BIỂN (OCEAN BLUE).
+ *
+ * ĐÂY LÀ NGUỒN CHÂN LÝ DUY NHẤT cho màu sắc và kích thước.
+ * Mọi màn hình & file style khác PHẢI import COLORS/SIZES từ đây.
  */
 export const COLORS = {
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  primarySoft: '#EFF6FF',
-  primaryLight: '#DBEAFE',
-  background: '#F4F7FB',
+  // ---- Brand (XANH NƯỚC BIỂN) ----
+  primary: '#0284C7',
+  primaryDark: '#0369A1',
+  primarySoft: '#E0F2FE',
+  primaryLight: '#BAE6FD',
+
+  // ---- Accent (điểm nhấn - Amber) ----
+  accent: '#F59E0B',
+  accentSoft: '#FEF3C7',
+
+  // ---- Background & Surface ----
+  background: '#F4F5FA',
   surface: '#FFFFFF',
   white: '#FFFFFF',
-  textPrimary: '#0B1220',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  border: '#E5EAF2',
+
+  // ---- Text ----
+  textPrimary: '#14152B',
+  textSecondary: '#8B90A8',
+  textMuted: '#B9BDD0',
+
+  // ---- Border & Input ----
+  border: '#ECEDF5',
   inputBg: '#F7F9FC',
-  link: '#2563EB',
-  danger: '#DC2626',
-  dangerSoft: '#FEF2F2',
+
+  // ---- Semantic ----
+  link: '#0284C7',
+  danger: '#FF5B6E',
+  dangerSoft: '#FFF1F2',
   success: '#16A34A',
   successSoft: '#F0FDF4',
   warning: '#D97706',
   warningSoft: '#FFFBEB',
-  shadow: '#0F172A',
+
+  // ---- Shadow ----
+  shadow: '#1A1B2E',
 } as const;
 
 export const SIZES = {
@@ -40,7 +58,7 @@ export const SIZES = {
 } as const;
 
 export const GlobalStyles = StyleSheet.create({
-  // App shell
+  // ========== App shell ==========
   screen: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -63,7 +81,7 @@ export const GlobalStyles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
 
-  // Auth / welcome
+  // ========== Auth / welcome ==========
   authContainer: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -113,7 +131,7 @@ export const GlobalStyles = StyleSheet.create({
     borderRadius: 26,
     padding: 26,
     borderWidth: 1,
-    borderColor: '#E8EDF5',
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOpacity: 0.08,
     shadowRadius: 24,
@@ -220,7 +238,7 @@ export const GlobalStyles = StyleSheet.create({
     fontSize: SIZES.fontSmall,
   },
 
-  // Products
+  // ========== Products ==========
   productHeader: {
     backgroundColor: COLORS.surface,
     paddingHorizontal: 20,
@@ -288,7 +306,7 @@ export const GlobalStyles = StyleSheet.create({
     padding: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E8EDF5',
+    borderColor: COLORS.border,
     shadowColor: COLORS.shadow,
     shadowOpacity: 0.055,
     shadowRadius: 12,
@@ -326,7 +344,7 @@ export const GlobalStyles = StyleSheet.create({
   cardCategory: {
     alignSelf: 'flex-start',
     fontSize: 11,
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     fontWeight: '700',
     backgroundColor: COLORS.primarySoft,
     paddingHorizontal: 8,
@@ -383,7 +401,7 @@ export const GlobalStyles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  // Product detail
+  // ========== Product detail ==========
   detailContainer: {
     flex: 1,
     backgroundColor: COLORS.background,

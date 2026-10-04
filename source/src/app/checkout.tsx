@@ -9,12 +9,9 @@ import { useCart } from '../contexts/CartContext';
 import { useRoleGuard } from '../hooks/use-role-guard';
 import { createOrder, InsufficientBalanceError } from '../services/api';
 import { fetchWallet } from '../services/wallet.api';
-import { COLORS, GlobalStyles } from '../styles/GlobalStyles';
-import { ExtraStyles } from '../styles/ExtraStyles';
-
-function formatPrice(value: number) {
-  return `${Math.round(value).toLocaleString('vi-VN')}đ`;
-}
+import { CheckoutStyles as styles } from '../styles/CheckoutStyles';
+import { COLORS } from '../styles/GlobalStyles';
+import { formatPrice } from '../utils/format';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -97,96 +94,144 @@ export default function CheckoutScreen() {
 
   if (!allowed) {
     return (
-      <SafeAreaView style={GlobalStyles.center}>
+      <SafeAreaView style={styles.screen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={GlobalStyles.topBackText}>‹ Quay lại</Text>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar đồng bộ Dashboard ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
         </Pressable>
-        <Text style={[ExtraStyles.screenHeaderTitle, { marginTop: 6 }]}>Thanh toán</Text>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>THANH TOÁN</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Xác nhận đơn hàng
+          </Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}>
-        {/* Tóm tắt đơn hàng */}
-        <View style={ExtraStyles.summaryBox}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ============ Tóm tắt đơn hàng ============ */}
+        <Text style={styles.sectionTitle}>ĐƠN HÀNG CỦA BẠN</Text>
+        <View style={styles.card}>
           {items.map((it) => (
-            <View key={it.product.id} style={ExtraStyles.summaryRow}>
-              <Text style={ExtraStyles.summaryLabel} numberOfLines={1}>
-                {it.product.name} x{it.quantity}
+            <View key={it.product.id} style={styles.itemRow}>
+              <Text style={styles.itemName} numberOfLines={1}>
+                {it.product.name}
+                <Text style={styles.itemQty}>  x{it.quantity}</Text>
               </Text>
-              <Text style={ExtraStyles.summaryValue}>
+              <Text style={styles.itemPrice}>
                 {formatPrice(Number(it.product.price) * it.quantity)}
               </Text>
             </View>
           ))}
-          <View style={[ExtraStyles.summaryRow, { marginTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 12 }]}>
-            <Text style={ExtraStyles.summaryTotalLabel}>Tổng thanh toán</Text>
-            <Text style={ExtraStyles.summaryTotalValue}>{formatPrice(totalPrice)}</Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Tổng thanh toán</Text>
+            <Text style={styles.totalValue}>{formatPrice(totalPrice)}</Text>
           </View>
         </View>
 
-        {/* Thanh toán từ ví */}
-        <Text style={[GlobalStyles.descTitle, { marginHorizontal: 16, marginTop: 20, marginBottom: 10 }]}>
-          Thanh toán bằng số dư ví
-        </Text>
-        <View style={ExtraStyles.summaryBox}>
-          <View style={ExtraStyles.summaryRow}>
-            <Text style={ExtraStyles.summaryLabel}>Số dư hiện tại</Text>
+        {/* ============ Ví thanh toán ============ */}
+        <Text style={styles.sectionTitle}>PHƯƠNG THỨC THANH TOÁN</Text>
+        <View style={styles.card}>
+          <View style={styles.walletHeader}>
+            <View style={styles.walletIconWrap}>
+              <Text style={styles.walletIcon}>💰</Text>
+            </View>
+            <View style={styles.walletHeaderText}>
+              <Text style={styles.walletHeaderLabel}>VÍ DIGITAL RESOURCES</Text>
+              <Text style={styles.walletHeaderSub}>Trừ trực tiếp từ số dư ví</Text>
+            </View>
+          </View>
+
+          <View style={styles.walletRow}>
+            <Text style={styles.walletLabel}>Số dư hiện tại</Text>
             {balance === null ? (
               <ActivityIndicator color={COLORS.primary} />
             ) : (
-              <Text style={ExtraStyles.summaryValue}>{formatPrice(balance)}</Text>
+              <Text style={styles.walletValueHighlight}>{formatPrice(balance)}</Text>
             )}
           </View>
+
           {balance !== null && enough && (
-            <View style={ExtraStyles.summaryRow}>
-              <Text style={ExtraStyles.summaryLabel}>Số dư sau khi mua</Text>
-              <Text style={ExtraStyles.summaryValue}>{formatPrice(balance - totalPrice)}</Text>
+            <View style={styles.walletRow}>
+              <Text style={styles.walletLabel}>Số dư sau khi mua</Text>
+              <Text style={styles.walletValue}>{formatPrice(balance - totalPrice)}</Text>
+            </View>
+          )}
+
+          {balance !== null && !enough && (
+            <View style={styles.walletRow}>
+              <Text style={styles.walletLabel}>Còn thiếu</Text>
+              <Text style={styles.walletValueEmpty}>{formatPrice(missing)}</Text>
             </View>
           )}
         </View>
 
+        {/* ============ Cảnh báo số dư không đủ ============ */}
         {balance !== null && !enough && (
-          <View style={ExtraStyles.dangerBanner}>
-            <Text style={ExtraStyles.dangerBannerTitle}>Số dư ví không đủ</Text>
-            <Text style={ExtraStyles.dangerBannerText}>
+          <View style={styles.dangerBanner}>
+            <Text style={styles.dangerTitle}>⚠️ Số dư ví không đủ</Text>
+            <Text style={styles.dangerText}>
               Bạn còn thiếu {formatPrice(missing)}. Hãy nạp thêm tiền vào ví (qua MoMo) rồi quay lại thanh toán.
             </Text>
-            <Pressable style={[GlobalStyles.button, { marginTop: 12 }]} onPress={goToWallet}>
-              <Text style={GlobalStyles.buttonText}>NẠP TIỀN VÀO VÍ</Text>
+            <Pressable
+              style={({ pressed }) => [styles.dangerButton, pressed && styles.pressed]}
+              onPress={goToWallet}
+              accessibilityRole="button"
+            >
+              <Text style={styles.dangerButtonText}>NẠP TIỀN VÀO VÍ</Text>
             </Pressable>
           </View>
         )}
 
-        <View style={ExtraStyles.noticeBanner}>
-          <Text style={ExtraStyles.noticeBannerTitle}>Lưu ý về lịch sử mua hàng</Text>
-          <Text style={ExtraStyles.noticeBannerText}>
+        {/* ============ Lưu ý ============ */}
+        <View style={styles.noticeBanner}>
+          <Text style={styles.noticeTitle}>📌 Lưu ý về lịch sử mua hàng</Text>
+          <Text style={styles.noticeText}>
             Sau khi thanh toán, tài khoản & mật khẩu được lưu trong Lịch sử mua hàng và sẽ tự động xoá sau 7 ngày.
           </Text>
         </View>
       </ScrollView>
 
-      <View style={GlobalStyles.footer}>
+      {/* ============ Nút xác nhận ============ */}
+      <View style={styles.footer}>
         <Pressable
           style={({ pressed }) => [
-            GlobalStyles.buyButton,
-            (submitting || !enough) && GlobalStyles.buyButtonDisabled,
-            pressed && !submitting && GlobalStyles.buyButtonPressed,
+            styles.confirmButton,
+            (submitting || !enough || items.length === 0 || balance === null) &&
+              styles.confirmButtonDisabled,
+            pressed && !submitting && styles.confirmButtonPressed,
           ]}
           disabled={submitting || items.length === 0 || balance === null || !enough}
           onPress={handleConfirm}
+          accessibilityRole="button"
+          accessibilityLabel="Xác nhận thanh toán"
         >
           {submitting ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
-            <Text style={GlobalStyles.buyButtonText}>
-              {balance !== null && !enough ? 'SỐ DƯ KHÔNG ĐỦ' : `THANH TOÁN ${formatPrice(totalPrice)}`}
+            <Text style={styles.confirmButtonText}>
+              {balance !== null && !enough
+                ? 'SỐ DƯ KHÔNG ĐỦ'
+                : `THANH TOÁN ${formatPrice(totalPrice)}`}
             </Text>
           )}
         </Pressable>

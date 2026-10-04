@@ -1,20 +1,23 @@
 // src/app/admin/support-list.tsx
-// File MỚI HOÀN TOÀN.
-// Dành riêng cho tài khoản role = ADMIN (chủ shop duy nhất): xem danh sách mọi
-// cuộc trò chuyện mà người mua đã gửi tới, để chọn vào trả lời.
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchAdminConversations, type AdminConversationSummary } from '../../services/adminSupport.api';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-}
+import {
+  fetchAdminConversations,
+  type AdminConversationSummary,
+} from '../../services/adminSupport.api';
+import { ChatStyles as styles } from '../../styles/ChatStyles';
+import { COLORS } from '../../styles/GlobalStyles';
+import { formatShortDate } from '../../utils/format';
 
 export default function AdminSupportListScreen() {
   const router = useRouter();
@@ -39,7 +42,6 @@ export default function AdminSupportListScreen() {
       router.replace('/auth/login');
       return;
     }
-    // Chặn Buyer truy cập trực tiếp màn hình Admin bằng cách gõ URL
     if (!authLoading && user && user.role !== 'ADMIN') {
       router.replace('/profile');
       return;
@@ -59,39 +61,63 @@ export default function AdminSupportListScreen() {
 
   if (loading || authLoading) {
     return (
-      <View style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <View style={GlobalStyles.productHeaderRow}>
-          <Text style={ExtraStyles.screenHeaderTitle}>Hội thoại khách hàng</Text>
-          <Pressable onPress={() => router.push('/profile')} style={GlobalStyles.logoutButton}>
-            <Text style={GlobalStyles.logoutText}>Trang cá nhân</Text>
-          </Pressable>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </Pressable>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>
+            HỘI THOẠI KHÁCH HÀNG
+            {conversations.length > 0 ? ` · ${conversations.length}` : ''}
+          </Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Hỗ trợ người mua
+          </Text>
         </View>
       </View>
 
+      {/* ============ Error ============ */}
       {error && (
-        <View style={GlobalStyles.errorBox}>
-          <Text style={GlobalStyles.errorText}>{error}</Text>
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
+      {/* ============ Danh sách hội thoại ============ */}
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
         ListEmptyComponent={
           !error ? (
-            <View style={GlobalStyles.center}>
-              <Text style={GlobalStyles.emptyTitle}>Chưa có hội thoại nào</Text>
-              <Text style={GlobalStyles.emptyText}>
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyTitle}>Chưa có hội thoại nào</Text>
+              <Text style={styles.emptyText}>
                 Khi người mua gửi tin nhắn hỏi/hỗ trợ, hội thoại sẽ hiện ở đây.
               </Text>
             </View>
@@ -99,23 +125,29 @@ export default function AdminSupportListScreen() {
         }
         renderItem={({ item }) => (
           <Pressable
-            style={ExtraStyles.conversationItem}
-            onPress={() => router.push(`/admin/chat/${item.id}`)}
+            style={({ pressed }) => [styles.conversationItem, pressed && styles.pressed]}
+            onPress={() => router.push(`/admin/chat/${item.id}` as any)}
           >
-            <View style={ExtraStyles.conversationAvatar}>
-              <Text style={ExtraStyles.conversationAvatarText}>🙋</Text>
+            <View style={styles.conversationAvatar}>
+              <Text style={styles.conversationAvatarText}>🙋</Text>
             </View>
-            <View style={ExtraStyles.conversationBody}>
-              <Text style={ExtraStyles.conversationSubject} numberOfLines={1}>
-                {item.user.fullName} ({item.user.email})
+
+            <View style={styles.conversationBody}>
+              <Text style={styles.conversationSubject} numberOfLines={1}>
+                {item.user.fullName}
               </Text>
-              <Text style={ExtraStyles.conversationLastMessage} numberOfLines={1}>
+              <Text style={styles.conversationLastMessage} numberOfLines={1}>
                 {item.lastMessage
                   ? `${item.lastMessage.senderRole === 'ADMIN' ? 'Bạn: ' : ''}${item.lastMessage.content}`
                   : item.subject || 'Chưa có tin nhắn'}
               </Text>
             </View>
-            <Text style={{ fontSize: 11, color: COLORS.textMuted }}>{formatTime(item.updatedAt)}</Text>
+
+            <View style={styles.conversationMeta}>
+              <Text style={styles.conversationTime}>
+                {formatShortDate(item.updatedAt)}
+              </Text>
+            </View>
           </Pressable>
         )}
       />

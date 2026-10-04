@@ -4,85 +4,117 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCart } from '../../contexts/CartContext';
 import { useRoleGuard } from '../../hooks/use-role-guard';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-
-function formatPrice(value: number) {
-  return `${Math.round(value).toLocaleString('vi-VN')}đ`;
-}
+import { CartStyles as styles } from '../../styles/CartStyles';
+import { formatPrice } from '../../utils/format';
 
 export default function CartScreen() {
   const router = useRouter();
   const { items, totalPrice, updateQuantity, removeItem } = useCart();
   const { allowed } = useRoleGuard('BUYER');
 
-  if (!allowed) return <SafeAreaView style={GlobalStyles.center} />;
+  if (!allowed) return <SafeAreaView style={styles.screen} />;
+
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <View style={GlobalStyles.productHeaderRow}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={GlobalStyles.topBackText}>‹ Quay lại</Text>
-          </Pressable>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar đồng bộ Dashboard ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </Pressable>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>GIỎ HÀNG</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Sản phẩm đã chọn
+          </Text>
         </View>
-        <Text style={[ExtraStyles.screenHeaderTitle, { marginTop: 6 }]}>Giỏ hàng</Text>
+
+        {itemCount > 0 && (
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{itemCount}</Text>
+          </View>
+        )}
       </View>
 
+      {/* ============ Danh sách sản phẩm ============ */}
       <FlatList
         data={items}
         keyExtractor={(item) => item.product.id}
-        contentContainerStyle={{ paddingTop: 14, paddingBottom: 24 }}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={[GlobalStyles.center, { paddingTop: 60 }]}>
-            <Text style={GlobalStyles.emptyTitle}>Giỏ hàng trống</Text>
-            <Text style={GlobalStyles.emptyText}>Hãy chọn vài sản phẩm để bắt đầu mua sắm nhé.</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyIcon}>🛒</Text>
+            <Text style={styles.emptyTitle}>Giỏ hàng trống</Text>
+            <Text style={styles.emptyText}>
+              Hãy chọn vài sản phẩm để bắt đầu mua sắm nhé.
+            </Text>
             <Pressable
-              style={[GlobalStyles.retryButton, { marginTop: 16 }]}
+              style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
               onPress={() => router.push('/products')}
             >
-              <Text style={GlobalStyles.retryButtonText}>Xem sản phẩm</Text>
+              <Text style={styles.emptyButtonText}>Xem sản phẩm</Text>
             </Pressable>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={ExtraStyles.cartLine}>
-            <View style={ExtraStyles.cartLineImage}>
+          <View style={styles.cartLine}>
+            <View style={styles.cartLineImage}>
               {item.product.imageUrl ? (
                 <Image
                   source={{ uri: item.product.imageUrl }}
-                  style={{ width: '100%', height: '100%', borderRadius: 14 }}
+                  style={{ width: '100%', height: '100%' }}
                   contentFit="cover"
+                  transition={150}
                 />
-              ) : null}
+              ) : (
+                <View
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 28 }}>🛍️</Text>
+                </View>
+              )}
             </View>
 
-            <View style={ExtraStyles.cartLineBody}>
-              <Text style={ExtraStyles.cartLineName} numberOfLines={2}>
+            <View style={styles.cartLineBody}>
+              <Text style={styles.cartLineName} numberOfLines={2}>
                 {item.product.name}
               </Text>
-              <Text style={ExtraStyles.cartLinePrice}>{formatPrice(Number(item.product.price))}</Text>
+              <Text style={styles.cartLinePrice}>
+                {formatPrice(Number(item.product.price))}
+              </Text>
 
-              <View style={ExtraStyles.qtyRow}>
+              <View style={styles.qtyRow}>
                 <Pressable
-                  style={ExtraStyles.qtyButton}
+                  style={styles.qtyButton}
                   onPress={() => updateQuantity(item.product.id, item.quantity - 1)}
                 >
-                  <Text style={ExtraStyles.qtyButtonText}>−</Text>
+                  <Text style={styles.qtyButtonText}>−</Text>
                 </Pressable>
-                <Text style={ExtraStyles.qtyValue}>{item.quantity}</Text>
+                <Text style={styles.qtyValue}>{item.quantity}</Text>
                 <Pressable
-                  style={ExtraStyles.qtyButton}
+                  style={styles.qtyButton}
                   onPress={() => updateQuantity(item.product.id, item.quantity + 1)}
                 >
-                  <Text style={ExtraStyles.qtyButtonText}>+</Text>
+                  <Text style={styles.qtyButtonText}>+</Text>
                 </Pressable>
 
                 <Pressable
-                  style={ExtraStyles.cartLineRemove}
+                  style={styles.removeBtn}
                   onPress={() => removeItem(item.product.id)}
                 >
-                  <Text style={ExtraStyles.cartLineRemoveText}>Xoá</Text>
+                  <Text style={styles.removeBtnText}>Xoá</Text>
                 </Pressable>
               </View>
             </View>
@@ -90,19 +122,21 @@ export default function CartScreen() {
         )}
       />
 
+      {/* ============ Footer: Tổng tiền + Đặt hàng ============ */}
       {items.length > 0 && (
-        <View style={[GlobalStyles.footer, { flexDirection: 'row', alignItems: 'center' }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12 }}>Tổng cộng</Text>
-            <Text style={{ color: COLORS.primaryDark, fontSize: 20, fontWeight: '900' }}>
-              {formatPrice(totalPrice)}
-            </Text>
+        <View style={styles.footer}>
+          <View style={styles.footerLeft}>
+            <Text style={styles.totalLabel}>TỔNG CỘNG</Text>
+            <Text style={styles.totalValue}>{formatPrice(totalPrice)}</Text>
           </View>
+
           <Pressable
-            style={({ pressed }) => [GlobalStyles.buyButton, { paddingHorizontal: 26 }, pressed && GlobalStyles.buyButtonPressed]}
+            style={({ pressed }) => [styles.checkoutBtn, pressed && styles.checkoutBtnPressed]}
             onPress={() => router.push('/checkout')}
+            accessibilityRole="button"
+            accessibilityLabel="Đặt hàng"
           >
-            <Text style={GlobalStyles.buyButtonText}>ĐẶT HÀNG</Text>
+            <Text style={styles.checkoutBtnText}>ĐẶT HÀNG</Text>
           </Pressable>
         </View>
       )}

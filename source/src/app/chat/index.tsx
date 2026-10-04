@@ -1,18 +1,20 @@
 // src/app/chat/index.tsx
-// File MỚI HOÀN TOÀN.
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchConversations, type ConversationSummary } from '../../services/chat.api';
-import { COLORS, GlobalStyles } from '../../styles/GlobalStyles';
-import { ExtraStyles } from '../../styles/ExtraStyles';
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-}
+import { ChatStyles as styles } from '../../styles/ChatStyles';
+import { COLORS } from '../../styles/GlobalStyles';
+import { formatShortDate } from '../../utils/format';
 
 export default function ChatListScreen() {
   const router = useRouter();
@@ -52,69 +54,110 @@ export default function ChatListScreen() {
 
   if (loading) {
     return (
-      <View style={GlobalStyles.center}>
+      <SafeAreaView style={styles.loadingScreen}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
   return (
-    <SafeAreaView style={ExtraStyles.screen} edges={['top']}>
-      <View style={ExtraStyles.screenHeader}>
-        <View style={GlobalStyles.productHeaderRow}>
-          <Text style={ExtraStyles.screenHeaderTitle}>Tin nhắn</Text>
-          <Pressable onPress={() => router.push('/chat/new')} style={GlobalStyles.logoutButton}>
-            <Text style={GlobalStyles.logoutText}>+ Liên hệ Shop</Text>
-          </Pressable>
+    <SafeAreaView style={styles.main} edges={['top', 'bottom']}>
+      {/* ============ Top Bar ============ */}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </Pressable>
+
+        <View style={styles.heading}>
+          <Text style={styles.greeting}>HỘP THƯ</Text>
+          <Text style={styles.topTitle} numberOfLines={1}>
+            Tin nhắn
+            {totalUnread > 0 ? ` · ${totalUnread} chưa đọc` : ''}
+          </Text>
         </View>
+
+        <Pressable
+          onPress={() => router.push('/chat/new')}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Liên hệ Shop"
+        >
+          <Text style={styles.iconButtonText}>＋</Text>
+        </Pressable>
       </View>
 
+      {/* ============ Error ============ */}
       {error && (
-        <View style={GlobalStyles.errorBox}>
-          <Text style={GlobalStyles.errorText}>{error}</Text>
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
 
+      {/* ============ Danh sách hội thoại ============ */}
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
         ListEmptyComponent={
           !error ? (
-            <View style={GlobalStyles.center}>
-              <Text style={GlobalStyles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
-              <Text style={GlobalStyles.emptyText}>
-                Bấm nút &quot;+ Liên hệ Shop&quot; ở trên để bắt đầu cuộc trò chuyện đầu tiên.
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
+              <Text style={styles.emptyText}>
+                Bấm nút ＋ ở trên để bắt đầu cuộc trò chuyện đầu tiên với Shop.
               </Text>
+              <Pressable
+                style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
+                onPress={() => router.push('/chat/new')}
+              >
+                <Text style={styles.emptyButtonText}>Liên hệ Shop</Text>
+              </Pressable>
             </View>
           ) : null
         }
         renderItem={({ item }) => (
           <Pressable
-            style={ExtraStyles.conversationItem}
+            style={({ pressed }) => [styles.conversationItem, pressed && styles.pressed]}
             onPress={() => router.push(`/chat/${item.id}`)}
           >
-            <View style={ExtraStyles.conversationAvatar}>
-              <Text style={ExtraStyles.conversationAvatarText}>🛎️</Text>
+            <View style={styles.conversationAvatar}>
+              <Text style={styles.conversationAvatarText}>🛎️</Text>
             </View>
-            <View style={ExtraStyles.conversationBody}>
-              <Text style={ExtraStyles.conversationSubject} numberOfLines={1}>
+
+            <View style={styles.conversationBody}>
+              <Text style={styles.conversationSubject} numberOfLines={1}>
                 {item.subject || item.product?.name || 'Hỗ trợ khách hàng'}
               </Text>
-              <Text style={ExtraStyles.conversationLastMessage} numberOfLines={1}>
+              <Text style={styles.conversationLastMessage} numberOfLines={1}>
                 {item.lastMessage
                   ? `${item.lastMessage.senderRole === 'USER' ? 'Bạn: ' : ''}${item.lastMessage.content}`
                   : 'Chưa có tin nhắn'}
               </Text>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 11, color: COLORS.textMuted }}>
-                {formatTime(item.updatedAt)}
+
+            <View style={styles.conversationMeta}>
+              <Text style={styles.conversationTime}>
+                {formatShortDate(item.updatedAt)}
               </Text>
               {item.unreadCount > 0 && (
-                <View style={ExtraStyles.unreadBadge}>
-                  <Text style={ExtraStyles.unreadBadgeText}>{item.unreadCount}</Text>
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
                 </View>
               )}
             </View>
