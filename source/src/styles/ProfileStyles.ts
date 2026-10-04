@@ -1,10 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { COLORS } from './GlobalStyles';
 
-/**
- * Style riêng cho màn hình Tài khoản (profile/index.tsx).
- * Đồng bộ tone XANH NƯỚC BIỂN với Dashboard / Cart / Wallet / Purchases.
- */
 export const ProfileStyles = StyleSheet.create({
   // ========== Layout ==========
   screen: { flex: 1, backgroundColor: COLORS.background },
@@ -41,7 +37,26 @@ export const ProfileStyles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: -0.3,
   },
-
+// Trong ProfileStyles.ts - thêm vào phần "Top Bar"
+backButton: {
+  width: 42,
+  height: 42,
+  borderRadius: 14,
+  backgroundColor: COLORS.surface,
+  alignItems: 'center',
+  justifyContent: 'center',
+  shadowColor: COLORS.shadow,
+  shadowOpacity: 0.07,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 2,
+},
+backButtonText: {
+  fontSize: 22,
+  color: COLORS.textPrimary,
+  fontWeight: '600',
+  marginTop: -3,
+},
   // ========== Logout Button (rõ ràng, có chữ) ==========
   logoutBtn: {
     height: 42,

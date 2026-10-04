@@ -97,17 +97,29 @@ export default function ProductListScreen() {
 
   return (
     <SafeAreaView style={styles.main} edges={['top']}>
-      {/* Top Bar đồng bộ Dashboard */}
+      {/* ============ Top Bar với nút BACK ============ */}
       <View style={styles.topBar}>
-        <View style={{ flex: 1 }}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </Pressable>
+
+        <View style={styles.heading}>
           <Text style={styles.greeting}>CỬA HÀNG</Text>
           <Text style={styles.topTitle} numberOfLines={1}>
             Sản phẩm
           </Text>
         </View>
+
         <Pressable
           onPress={() => router.push('/cart')}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Giỏ hàng"
         >
           <Text style={{ fontSize: 19 }}>🛒</Text>
           {totalQuantity > 0 && (

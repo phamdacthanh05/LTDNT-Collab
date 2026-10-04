@@ -1,10 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { COLORS } from './GlobalStyles';
 
-/**
- * Style riêng cho màn hình Danh sách sản phẩm (products/index.tsx).
- * Màu sắc & token đều import từ GlobalStyles để đảm bảo đồng bộ.
- */
 export const ProductListStyles = StyleSheet.create({
   // ========== Layout ==========
   screen: { flex: 1, backgroundColor: COLORS.background },
@@ -16,7 +12,7 @@ export const ProductListStyles = StyleSheet.create({
   },
   main: { flex: 1, backgroundColor: COLORS.background },
 
-  // ========== Top Bar (đồng bộ Dashboard) ==========
+  // ========== Top Bar ==========
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -25,6 +21,26 @@ export const ProductListStyles = StyleSheet.create({
     paddingBottom: 14,
     gap: 10,
   },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    marginTop: -3,
+  },
+  heading: { flex: 1, minWidth: 0 },
   greeting: {
     fontSize: 10,
     letterSpacing: 1.2,

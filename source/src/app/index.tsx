@@ -1,12 +1,13 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,9 +20,10 @@ import { fetchWallet } from '../services/wallet.api';
 import { COLORS, GlobalStyles } from '../styles/GlobalStyles';
 
 const FEATURED_COUNT = 6;
+const TABLET_BREAKPOINT = 768;
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens - ĐỒNG BỘ với GlobalStyles.COLORS (OCEAN BLUE)       */
+/*  Design tokens (đồng bộ GlobalStyles.COLORS - Ocean Blue)           */
 /* ------------------------------------------------------------------ */
 const T = {
   bg: COLORS.background,
@@ -39,10 +41,6 @@ const T = {
   shadow: COLORS.shadow,
 };
 
-// Sidebar luôn mở, chiều rộng cố định nhưng co lại trên màn hình nhỏ
-const SCREEN_W = Dimensions.get('window').width;
-const SIDEBAR_WIDTH = SCREEN_W < 400 ? 210 : 244;
-
 type MenuItem = {
   key: string;
   icon: string;
@@ -59,6 +57,11 @@ type MenuItem = {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_W } = useWindowDimensions();
+
+  const isMobile = SCREEN_W < TABLET_BREAKPOINT;
+  const SIDEBAR_WIDTH = SCREEN_W < 400 ? 260 : 280;
+
   const { user, isLoading, logout } = useAuth();
   const { addItem, totalQuantity } = useCart();
   const isAdmin = user?.role === 'ADMIN';
@@ -66,6 +69,39 @@ export default function HomeScreen() {
   const [unreadChat, setUnreadChat] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
+
+  // ── Sidebar (drawer trên mobile) ──
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const slideAnim = useRef(new Animated.Value(isMobile ? 0 : 1)).current;
+
+  // Tự reset khi đổi breakpoint (xoay máy, resize)
+  useEffect(() => {
+    const target = isMobile ? 0 : 1;
+    setSidebarOpen(!isMobile);
+    Animated.timing(slideAnim, {
+      toValue: target,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [isMobile, slideAnim]);
+
+  const openSidebar = useCallback(() => {
+    setSidebarOpen(true);
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [slideAnim]);
+
+  const closeSidebar = useCallback(() => {
+    setSidebarOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [slideAnim]);
 
   /* ---------------- data loading ---------------- */
   const loadUnread = useCallback(async () => {
@@ -177,24 +213,55 @@ export default function HomeScreen() {
   const initials = (user.fullName || '?').trim().charAt(0).toUpperCase();
 
   const go = (item: MenuItem) => {
-    if (item.params) {
-      router.push({ pathname: item.path, params: item.params } as any);
-    } else {
-      router.push(item.path as any);
-    }
+    if (isMobile) closeSidebar();
+    // Đợi animation bắt đầu rồi mới điều hướng, cảm giác mượt hơn
+    setTimeout(
+      () => {
+        if (item.params) {
+          router.push({ pathname: item.path, params: item.params } as any);
+        } else {
+          router.push(item.path as any);
+        }
+      },
+      isMobile ? 100 : 0
+    );
   };
 
   /* ---------------- main ---------------- */
   return (
     <View style={styles.root}>
-      {/* ================= SIDEBAR (luôn mở, bên trái) ================= */}
-      <View
+      {/* ============ Backdrop (chỉ mobile khi sidebar mở) ============ */}
+      {isMobile && sidebarOpen && (
+        <Pressable
+          style={styles.backdrop}
+          onPress={closeSidebar}
+          accessibilityLabel="Đóng menu"
+        />
+      )}
+
+      {/* ================= SIDEBAR / DRAWER ================= */}
+      <Animated.View
         style={[
           styles.sidebar,
-          { width: SIDEBAR_WIDTH, paddingTop: insets.top + 18, paddingBottom: insets.bottom + 14 },
+          isMobile && styles.sidebarMobile,
+          {
+            width: SIDEBAR_WIDTH,
+            paddingTop: insets.top + 18,
+            paddingBottom: insets.bottom + 14,
+          },
+          isMobile && {
+            transform: [
+              {
+                translateX: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-SIDEBAR_WIDTH - 20, 0],
+                }),
+              },
+            ],
+          },
         ]}
       >
-        {/* Brand */}
+        {/* Brand row + nút đóng (mobile) */}
         <View style={styles.brandRow}>
           <View style={styles.brandLogo}>
             <Text style={{ fontSize: 16 }}>🛒</Text>
@@ -202,6 +269,17 @@ export default function HomeScreen() {
           <Text style={styles.brandText} numberOfLines={1}>
             DIGITAL{'\n'}RESOURCES
           </Text>
+
+          {isMobile && (
+            <Pressable
+              onPress={closeSidebar}
+              style={styles.closeBtn}
+              hitSlop={8}
+              accessibilityLabel="Đóng menu"
+            >
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* User card */}
@@ -209,12 +287,15 @@ export default function HomeScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.userName} numberOfLines={1}>
               {user.fullName}
             </Text>
             <View style={[styles.rolePill, isAdmin && styles.rolePillAdmin]}>
-              <Text style={[styles.rolePillText, isAdmin && styles.rolePillTextAdmin]}>
+              <Text
+                style={[styles.rolePillText, isAdmin && styles.rolePillTextAdmin]}
+                numberOfLines={1}
+              >
                 {isAdmin ? 'Quản trị viên' : 'Khách hàng'}
               </Text>
             </View>
@@ -224,7 +305,10 @@ export default function HomeScreen() {
         {/* Wallet (buyer only) */}
         {!isAdmin && balance !== null && (
           <Pressable
-            onPress={() => router.push('/wallet' as any)}
+            onPress={() => {
+              if (isMobile) closeSidebar();
+              setTimeout(() => router.push('/wallet' as any), isMobile ? 100 : 0);
+            }}
             style={({ pressed }) => [styles.walletCard, pressed && styles.pressed]}
           >
             <Text style={styles.walletLabel}>Số dư ví</Text>
@@ -244,7 +328,7 @@ export default function HomeScreen() {
               <View style={styles.menuIconWrap}>
                 <Text style={styles.menuIcon}>{item.icon}</Text>
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.menuLabel} numberOfLines={1}>
                   {item.label}
                 </Text>
@@ -272,14 +356,28 @@ export default function HomeScreen() {
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </Pressable>
         <Text style={styles.version}>v1.0</Text>
-      </View>
+      </Animated.View>
 
-      {/* ================= MAIN CONTENT (bên phải) ================= */}
+      {/* ================= MAIN CONTENT ================= */}
       <SafeAreaView style={styles.main} edges={['top']}>
         {/* Top bar */}
         <View style={styles.topBar}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>{isAdmin ? 'BẢNG ĐIỀU KHIỂN' : 'XIN CHÀO 👋'}</Text>
+          {/* Hamburger (mobile) */}
+          {isMobile && (
+            <Pressable
+              onPress={openSidebar}
+              style={({ pressed }) => [styles.hamburgerBtn, pressed && styles.pressed]}
+              accessibilityLabel="Mở menu"
+              accessibilityRole="button"
+            >
+              <Text style={styles.hamburgerIcon}>☰</Text>
+            </Pressable>
+          )}
+
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.greeting} numberOfLines={1}>
+              {isAdmin ? 'BẢNG ĐIỀU KHIỂN' : 'XIN CHÀO 👋'}
+            </Text>
             <Text style={styles.topTitle} numberOfLines={1}>
               {isAdmin ? 'Quản trị hệ thống' : 'Kho tài nguyên số'}
             </Text>
@@ -323,7 +421,11 @@ export default function HomeScreen() {
             </Text>
 
             <Pressable
-              onPress={() => router.push((isAdmin ? '/admin/products' : '/products') as any)}
+              onPress={() => {
+                const target = isAdmin ? '/admin/products' : '/products';
+                if (isMobile) closeSidebar();
+                setTimeout(() => router.push(target as any), isMobile ? 100 : 0);
+              }}
               style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
             >
               <Text style={styles.heroCtaText}>
@@ -362,7 +464,7 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Với admin: hiển thị một số lối vào nhanh dạng danh sách */}
+          {/* Admin quick list */}
           {isAdmin && (
             <>
               <View style={styles.sectionHead}>
@@ -380,7 +482,7 @@ export default function HomeScreen() {
                     <View style={styles.menuIconWrap}>
                       <Text style={styles.menuIcon}>{item.icon}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.menuLabel}>{item.label}</Text>
                       <Text style={styles.menuHint}>{item.hint}</Text>
                     </View>
@@ -400,10 +502,26 @@ export default function HomeScreen() {
 /*  Styles                                                             */
 /* ------------------------------------------------------------------ */
 const styles = StyleSheet.create({
-  root: { flex: 1, flexDirection: 'row', backgroundColor: T.bg },
+  root: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: T.bg,
+    overflow: 'hidden',
+  },
   pressed: { opacity: 0.75 },
 
-  /* ---------- Sidebar ---------- */
+  // ========== Backdrop (mobile) ==========
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    zIndex: 15,
+  },
+
+  // ========== Sidebar ==========
   sidebar: {
     backgroundColor: T.sidebar,
     paddingHorizontal: 14,
@@ -415,7 +533,26 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 4, height: 0 },
     elevation: 4,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
+  sidebarMobile: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 20,
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    shadowOffset: { width: 6, height: 0 },
+    elevation: 16,
+    borderRightWidth: 0,
+  },
+
+  // ========== Brand row ==========
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 4,
+  },
   brandLogo: {
     width: 38,
     height: 38,
@@ -431,7 +568,23 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     lineHeight: 14,
   },
+  closeBtn: {
+    marginLeft: 'auto',
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: T.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeBtnText: {
+    fontSize: 14,
+    color: T.muted,
+    fontWeight: '800',
+    marginTop: -2,
+  },
 
+  // ========== User card ==========
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -448,7 +601,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: '#fff', fontSize: 17, fontWeight: '800' },
-  userName: { fontSize: 13.5, fontWeight: '800', color: T.text, letterSpacing: -0.2 },
+  userName: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: T.text,
+    letterSpacing: -0.2,
+  },
   rolePill: {
     alignSelf: 'flex-start',
     backgroundColor: T.accentSoft,
@@ -458,9 +616,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rolePillAdmin: { backgroundColor: T.primarySoft },
-  rolePillText: { fontSize: 9.5, fontWeight: '800', color: '#B45309', letterSpacing: 0.3 },
+  rolePillText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#B45309',
+    letterSpacing: 0.3,
+  },
   rolePillTextAdmin: { color: T.primaryDark },
 
+  // ========== Wallet card ==========
   walletCard: {
     backgroundColor: T.primarySoft,
     borderRadius: 16,
@@ -468,7 +632,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 16,
   },
-  walletLabel: { fontSize: 10.5, fontWeight: '700', color: T.primaryDark, opacity: 0.7 },
+  walletLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: T.primaryDark,
+    opacity: 0.7,
+  },
   walletValue: {
     fontSize: 17,
     fontWeight: '800',
@@ -477,6 +646,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
 
+  // ========== Menu ==========
   sectionLabel: {
     fontSize: 10,
     fontWeight: '800',
@@ -486,7 +656,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
   },
-
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -506,7 +675,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuIcon: { fontSize: 15 },
-  menuLabel: { fontSize: 13, fontWeight: '700', color: T.text, letterSpacing: -0.1 },
+  menuLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.text,
+    letterSpacing: -0.1,
+  },
   menuHint: { fontSize: 10.5, color: T.muted, marginTop: 1 },
   menuChevron: { fontSize: 18, color: '#C9CCDD', fontWeight: '700' },
   menuBadge: {
@@ -520,6 +694,7 @@ const styles = StyleSheet.create({
   },
   menuBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 
+  // ========== Logout ==========
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -541,7 +716,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  /* ---------- Main ---------- */
+  // ========== Main ==========
   main: { flex: 1, backgroundColor: T.bg },
 
   topBar: {
@@ -552,7 +727,12 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     gap: 10,
   },
-  greeting: { fontSize: 10, letterSpacing: 1.2, fontWeight: '800', color: T.muted },
+  greeting: {
+    fontSize: 10,
+    letterSpacing: 1.2,
+    fontWeight: '800',
+    color: T.muted,
+  },
   topTitle: {
     fontSize: 18,
     fontWeight: '800',
@@ -560,6 +740,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: -0.3,
   },
+
+  // ========== Hamburger (mobile) ==========
+  hamburgerBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: T.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: T.shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  hamburgerIcon: {
+    fontSize: 20,
+    color: T.text,
+    fontWeight: '700',
+    marginTop: -2,
+  },
+
+  // ========== Icon button (cart) ==========
   iconButton: {
     width: 42,
     height: 42,
@@ -589,7 +792,7 @@ const styles = StyleSheet.create({
   },
   cartBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
 
-  /* ---------- Hero ---------- */
+  // ========== Hero ==========
   hero: {
     marginHorizontal: 18,
     borderRadius: 24,
@@ -656,7 +859,7 @@ const styles = StyleSheet.create({
   heroCtaText: { color: T.primaryDark, fontWeight: '800', fontSize: 13 },
   heroCtaArrow: { color: T.primaryDark, fontWeight: '800', fontSize: 15 },
 
-  /* ---------- Sections ---------- */
+  // ========== Sections ==========
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -664,14 +867,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     marginTop: 26,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: T.text, letterSpacing: -0.3 },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: T.text,
+    letterSpacing: -0.3,
+  },
   sectionLink: { fontSize: 12.5, fontWeight: '700', color: T.primary },
-  sectionSub: { fontSize: 12, color: T.muted, paddingHorizontal: 18, marginTop: 4 },
+  sectionSub: {
+    fontSize: 12,
+    color: T.muted,
+    paddingHorizontal: 18,
+    marginTop: 4,
+  },
 
-  featuredRow: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 4, gap: 12 },
+  featuredRow: {
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 4,
+    gap: 12,
+  },
   featuredCardWrap: { width: 214 },
 
-  /* ---------- Admin list ---------- */
+  // ========== Admin list ==========
   adminList: {
     paddingHorizontal: 18,
     paddingTop: 14,

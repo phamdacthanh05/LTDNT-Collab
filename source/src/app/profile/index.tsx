@@ -56,18 +56,15 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // form chỉnh sửa thông tin
   const [fullName, setFullName] = useState('');
   const [address, setAddress] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // form đổi mật khẩu
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // lịch sử đơn hàng
   const [orders, setOrders] = useState<ProfileOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -163,7 +160,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // ⭐ SỬA: dùng showMessage để xác nhận trước khi đăng xuất
   const handleLogout = () => {
     showMessage({
       type: 'warning',
@@ -205,8 +201,17 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.main} edges={['top']}>
-      {/* ============ Top Bar ============ */}
+      {/* ============ Top Bar với nút BACK ============ */}
       <View style={styles.topBar}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </Pressable>
+
         <View style={styles.heading}>
           <Text style={styles.greeting}>{isAdmin ? 'QUẢN TRỊ VIÊN' : 'TÀI KHOẢN'}</Text>
           <Text style={styles.topTitle} numberOfLines={1}>
@@ -214,7 +219,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* ⭐ SỬA: nút đăng xuất có icon + chữ, dễ nhìn, ổn định trên mọi thiết bị */}
         <Pressable
           onPress={handleLogout}
           style={({ pressed }) => [styles.logoutBtn, pressed && styles.logoutBtnPressed]}
@@ -226,7 +230,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      {/* ============ Profile Hero (avatar + tên + email) ============ */}
+      {/* ============ Profile Hero ============ */}
       <View style={styles.profileHero}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
@@ -248,7 +252,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* ============ Wallet Hero (chỉ buyer) ============ */}
+      {/* ============ Wallet Hero ============ */}
       {!isAdmin && (
         <View style={styles.walletHero}>
           <View style={styles.walletHeroBlobA} />
@@ -274,7 +278,6 @@ export default function ProfileScreen() {
         <>
           <Text style={styles.adminSectionTitle}>TÁC VỤ QUẢN TRỊ</Text>
 
-          {/* ⭐ SỬA: thêm `as any` cho các route admin */}
           <Pressable
             onPress={() => router.push('/admin/support-list' as any)}
             style={({ pressed }) => [styles.adminActionCard, pressed && styles.pressed]}
