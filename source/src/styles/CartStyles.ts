@@ -1,0 +1,251 @@
+import { StyleSheet } from 'react-native';
+import { COLORS } from './GlobalStyles';
+
+/**
+ * Style riêng cho màn hình Giỏ hàng (cart/index.tsx).
+ * Đồng bộ tone XANH NƯỚC BIỂN với Dashboard.
+ */
+export const CartStyles = StyleSheet.create({
+  // ========== Layout ==========
+  screen: { flex: 1, backgroundColor: COLORS.background },
+  main: { flex: 1, backgroundColor: COLORS.background },
+
+  // ========== Top Bar (đồng bộ Dashboard / Products) ==========
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: COLORS.textPrimary,
+    fontWeight: '600',
+    marginTop: -3,
+  },
+  heading: { flex: 1 },
+  greeting: {
+    fontSize: 10,
+    letterSpacing: 1.2,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+  },
+  topTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginTop: 2,
+    letterSpacing: -0.3,
+  },
+  countBadge: {
+    minWidth: 28,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  countBadgeText: { color: COLORS.white, fontSize: 12, fontWeight: '800' },
+
+  // ========== Cart List ==========
+  listContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 24,
+  },
+
+  // ========== Cart Line ==========
+  cartLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 18,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  cartLineImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    backgroundColor: COLORS.primarySoft,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  cartLineBody: { flex: 1, minWidth: 0 },
+  cartLineName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    lineHeight: 19,
+  },
+  cartLinePrice: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+    marginTop: 5,
+  },
+
+  // ========== Quantity Row ==========
+  qtyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 8,
+  },
+  qtyButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginTop: -1,
+  },
+  qtyValue: {
+    minWidth: 26,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  removeBtn: {
+    marginLeft: 'auto',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: COLORS.dangerSoft,
+  },
+  removeBtnText: {
+    fontSize: 12,
+    color: COLORS.danger,
+    fontWeight: '800',
+  },
+
+  // ========== Empty State ==========
+  emptyWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: { fontSize: 56, marginBottom: 14 },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  emptyButton: {
+    marginTop: 20,
+    paddingHorizontal: 22,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  emptyButtonText: { color: COLORS.white, fontWeight: '800', fontSize: 14 },
+
+  // ========== Footer (tổng tiền + checkout) ==========
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 24,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
+    gap: 12,
+  },
+  footerLeft: { flex: 1 },
+  totalLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: 0.3,
+  },
+  totalValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.primaryDark,
+    marginTop: 2,
+    letterSpacing: -0.5,
+  },
+  checkoutBtn: {
+    paddingHorizontal: 24,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  checkoutBtnPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  checkoutBtnText: {
+    color: COLORS.white,
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 0.6,
+  },
+
+  pressed: { opacity: 0.85 },
+});
