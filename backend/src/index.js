@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/admin.routes');       // MỚI: quản lý
 const { startCleanupJob } = require('./utils/cleanup');      // MỚI: dọn lịch sử quá 7 ngày
 const adminSupportRoutes = require('./routes/adminSupport.routes'); // MỚI: Admin xem & trả lời hội thoại (JWT + role ADMIN)
 const adminUsersRoutes = require('./routes/adminUsers.routes'); // Quản lý người dùng (ADMIN)
+
 const app = express();
 
 app.use(cors());
@@ -30,7 +31,9 @@ app.use('/api/chat', chatRoutes);       // MỚI
 app.use('/api/admin-support', adminSupportRoutes); // MỚI
 app.use('/api/purchases', purchaseRoutes); // MỚI
 app.use('/api/wallet', walletRoutes);      // MỚI
+
 app.use('/api/admin/users', adminUsersRoutes); // MỚI
+
 app.use('/api/admin', adminRoutes);        // MỚI
 
 const PORT = process.env.PORT || 4000;
