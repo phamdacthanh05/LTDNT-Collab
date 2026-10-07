@@ -1,0 +1,28 @@
+<% if (conversations.length === 0) { %>
+    <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <h3>Chưa có hội thoại nào</h3>
+        <p>Khi người mua gửi tin nhắn hỏi/hỗ trợ, hội thoại sẽ hiện ở đây.</p>
+    </div>
+<% } else { %>
+    <div class="conversation-list">
+        <% conversations.forEach(c => { %>
+            <a href="/admin/support/<%= c.id %>" class="conversation-item">
+                <div class="conversation-avatar">🙋</div>
+                <div class="conversation-body">
+                    <div class="conversation-header">
+                        <strong><%= c.user.fullName %></strong>
+                        <small class="text-muted"><%= c.user.email %></small>
+                    </div>
+                    <p class="conversation-preview">
+                        <% if (c.messages && c.messages.length > 0) { %>
+                            <%= c.messages[0].senderRole === 'ADMIN' ? 'Bạn: ' : '' %><%= c.messages[0].content %>
+                        <% } else { %>
+                            <%= c.subject || 'Chưa có tin nhắn' %>
+                        <% } %>
+                    </p>
+                </div>
+            </a>
+        <% }) %>
+    </div>
+<% } %>

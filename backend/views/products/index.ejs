@@ -1,0 +1,60 @@
+<div class="header-actions">
+    <a href="/admin/products/create" class="btn-primary">＋ Thêm sản phẩm</a>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Ảnh</th>
+            <th>Tên sản phẩm</th>
+            <th>Giá bán</th>
+            <th>Kho</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (products.length === 0) { %>
+            <tr>
+                <td colspan="6" class="text-center empty-cell">
+                    Chưa có sản phẩm nào. Bấm "＋ Thêm sản phẩm" để bắt đầu.
+                </td>
+            </tr>
+        <% } %>
+        <% products.forEach(p => { %>
+            <tr>
+                <td>
+                    <% if (p.imageUrl) { %>
+                        <img src="<%= p.imageUrl %>" alt="<%= p.name %>" class="product-thumb">
+                    <% } else { %>
+                        <div class="product-thumb-placeholder">🛒</div>
+                    <% } %>
+                </td>
+                <td>
+                    <strong><%= p.name %></strong><br>
+                    <small class="text-muted"><%= p.category || 'Chưa phân loại' %></small>
+                </td>
+                <td><strong><%= new Intl.NumberFormat('vi-VN').format(p.price) %> đ</strong></td>
+                <td>
+                    <span class="badge <%= p.available === 0 ? 'badge-danger' : 'badge-success' %>">
+                        <%= p.available %> tài khoản
+                    </span>
+                </td>
+                <td>
+                    <span class="badge <%= p.isActive ? 'badge-success' : 'badge-warning' %>">
+                        <%= p.isActive ? 'Đang bán' : 'Đang ẩn' %>
+                    </span>
+                </td>
+                <td class="action-cell">
+                    <a href="/admin/products/<%= p.id %>/edit" class="btn-sm">Sửa</a>
+                    <form action="/admin/products/<%= p.id %>/toggle" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-sm"><%= p.isActive ? 'Ẩn' : 'Hiện' %></button>
+                    </form>
+                    <form action="/admin/products/<%= p.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">
+                        <button type="submit" class="btn-sm btn-danger">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>

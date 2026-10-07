@@ -1,0 +1,47 @@
+<div class="card">
+    <form action="/admin/products/<%= isEdit ? product.id + '/edit' : 'create' %>" method="POST">
+
+        <div class="form-group">
+            <label>Tên sản phẩm *</label>
+            <input type="text" name="name" value="<%= isEdit ? product.name : '' %>"
+                   placeholder="VD: Canva Pro 1 tháng" required maxlength="191">
+        </div>
+
+        <div class="form-group">
+            <label>Giá bán (đ) *</label>
+            <input type="number" name="price" value="<%= isEdit ? Number(product.price) : '' %>"
+                   placeholder="VD: 49000" required min="1">
+        </div>
+
+        <div class="form-group">
+            <label>Danh mục</label>
+            <input type="text" name="category" value="<%= isEdit ? (product.category || '') : '' %>"
+                   placeholder="VD: Canva Pro, Tool, Tài khoản" maxlength="191">
+        </div>
+
+        <div class="form-group">
+            <label>Link ảnh (tuỳ chọn)</label>
+            <input type="url" name="imageUrl" value="<%= isEdit ? (product.imageUrl || '') : '' %>"
+                   placeholder="https://..." maxlength="191">
+        </div>
+
+        <div class="form-group">
+            <label>Mô tả</label>
+            <textarea name="description" rows="4" placeholder="Mô tả ngắn về sản phẩm"><%= isEdit ? (product.description || '') : '' %></textarea>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="isActive" <%= (isEdit && product.isActive) || !isEdit ? 'checked' : '' %>>
+                <span>Đang bán (Tắt để ẩn sản phẩm khỏi cửa hàng)</span>
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">
+                <%= isEdit ? 'LƯU THAY ĐỔI' : 'THÊM SẢN PHẨM' %>
+            </button>
+            <a href="/admin/products" class="btn-secondary">Hủy</a>
+        </div>
+    </form>
+</div>

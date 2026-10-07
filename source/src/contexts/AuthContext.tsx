@@ -30,7 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = await getToken();
         if (token) {
           const me = await fetchMe();
-          setUser(me);
+
+          // Nếu token cũ thuộc về tài khoản ADMIN (do trước đây đã đăng nhập),
+          // chủ động xoá token để buộc đăng xuất khỏi app User.
+          if (me.role === 'ADMIN') {
+            await clearToken();
+            setUser(null);
+          } else {
+            setUser(me);
+          }
         }
       } catch {
         await clearToken();
@@ -42,6 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string) {
     const { token, user: loggedInUser } = await loginRequest(email, password);
+
+    // CHẶN ADMIN ĐĂNG NHẬP VÀO APP USER
+    if (loggedInUser.role === 'ADMIN') {
+      throw new Error(
+        'Tài khoản Admin không thể đăng nhập vào ứng dụng. Vui lòng truy cập trang quản trị Web.'
+      );
+    }
+
     await saveToken(token);
     setUser(loggedInUser);
   }

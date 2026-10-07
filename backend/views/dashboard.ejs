@@ -1,0 +1,182 @@
+<!-- ============ STATS CARDS ============ -->
+<div class="stats-grid">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng doanh thu</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(stats.totalRevenue) %> đ</span>
+            <span class="stat-sub">Hôm nay: <%= new Intl.NumberFormat('vi-VN').format(stats.todayRevenue) %> đ</span>
+        </div>
+    </div>
+
+    <div class="stat-card stat-success">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+            <span class="stat-label">Đơn hàng</span>
+            <span class="stat-value"><%= stats.totalOrders %></span>
+            <span class="stat-sub">Hôm nay: <%= stats.todayOrders %> đơn</span>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+            <span class="stat-label">Người dùng</span>
+            <span class="stat-value"><%= stats.totalBuyers %></span>
+            <span class="stat-sub">Admin: <%= stats.totalAdmins %></span>
+        </div>
+    </div>
+
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">🛍️</div>
+        <div class="stat-content">
+            <span class="stat-label">Sản phẩm</span>
+            <span class="stat-value"><%= stats.totalProducts %></span>
+            <span class="stat-sub">Đang bán: <%= stats.activeProducts %> / Ẩn: <%= stats.hiddenProducts %></span>
+        </div>
+    </div>
+
+    <div class="stat-card stat-secondary">
+        <div class="stat-icon">🎫</div>
+        <div class="stat-content">
+            <span class="stat-label">Tài khoản trong kho</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(stats.totalAccountsInStock) %></span>
+            <span class="stat-sub">Sẵn sàng để bán</span>
+        </div>
+    </div>
+
+    <div class="stat-card stat-danger">
+        <div class="stat-icon">💬</div>
+        <div class="stat-content">
+            <span class="stat-label">Chat chờ trả lời</span>
+            <span class="stat-value"><%= stats.pendingConversations %></span>
+            <span class="stat-sub">
+                <a href="/admin/support" class="stat-link-inline">Xem ngay →</a>
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ DOANH THU 7 NGÀY ============ -->
+<div class="card">
+    <h3 class="card-title">📊 Doanh thu 7 ngày gần nhất</h3>
+    <div class="bar-chart">
+        <% revenueByDay.forEach(d => { %>
+            <div class="bar-item">
+                <div class="bar-wrapper">
+                    <div class="bar" data-height="<%= d.barHeight %>"
+                         title="<%= new Intl.NumberFormat('vi-VN').format(d.revenue) %> đ">
+                        <span class="bar-tooltip"><%= new Intl.NumberFormat('vi-VN').format(d.revenue) %> đ</span>
+                    </div>
+                </div>
+                <span class="bar-label"><%= d.label %></span>
+                <span class="bar-sub"><%= d.orders %> đơn</span>
+            </div>
+        <% }) %>
+    </div>
+</div>
+
+<!-- ============ GRID 2 CỘT ============ -->
+<div class="dashboard-2col">
+
+    <!-- TOP SẢN PHẨM BÁN CHẠY -->
+    <div class="card">
+        <h3 class="card-title">🔥 Top 5 sản phẩm bán chạy</h3>
+        <% if (topProducts.length === 0) { %>
+            <p class="text-muted text-center" style="padding: 20px;">Chưa có dữ liệu bán hàng.</p>
+        <% } else { %>
+            <div class="top-list">
+                <% topProducts.forEach((p, idx) => { %>
+                    <div class="top-item">
+                        <div class="top-rank rank-<%= idx + 1 %>"><%= idx + 1 %></div>
+                        <div class="top-thumb">
+                            <% if (p.imageUrl) { %>
+                                <img src="<%= p.imageUrl %>" alt="<%= p.name %>">
+                            <% } else { %>
+                                <span>🛒</span>
+                            <% } %>
+                        </div>
+                        <div class="top-info">
+                            <strong><%= p.name %></strong>
+                            <small>Đã bán: <%= p.quantitySold %> · Doanh thu: <%= new Intl.NumberFormat('vi-VN').format(p.revenue) %> đ</small>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- ĐƠN HÀNG MỚI NHẤT -->
+    <div class="card">
+        <h3 class="card-title">🧾 Đơn hàng mới nhất</h3>
+        <% if (recentOrders.length === 0) { %>
+            <p class="text-muted text-center" style="padding: 20px;">Chưa có đơn hàng nào.</p>
+        <% } else { %>
+            <div class="recent-list">
+                <% recentOrders.forEach(o => { %>
+                    <a href="/admin/orders/<%= o.id %>" class="recent-item">
+                        <div class="recent-avatar">🧾</div>
+                        <div class="recent-info">
+                            <strong><%= o.user.fullName %></strong>
+                            <small><%= new Date(o.createdAt).toLocaleString('vi-VN') %></small>
+                        </div>
+                        <div class="recent-right">
+                            <span class="recent-amount"><%= new Intl.NumberFormat('vi-VN').format(o.totalAmount) %> đ</span>
+                            <span class="badge badge-<%= o.status === 'DELIVERED' ? 'success' : (o.status === 'PAID' ? 'info' : (o.status === 'PENDING' ? 'warning' : 'danger')) %>">
+                                <%= o.status %>
+                            </span>
+                        </div>
+                    </a>
+                <% }) %>
+            </div>
+            <a href="/admin/orders" class="btn-view-all">Xem tất cả đơn hàng →</a>
+        <% } %>
+    </div>
+
+    <!-- USER MỚI NHẤT -->
+    <div class="card">
+        <h3 class="card-title">👤 Người dùng mới</h3>
+        <% if (recentUsers.length === 0) { %>
+            <p class="text-muted text-center" style="padding: 20px;">Chưa có người dùng nào.</p>
+        <% } else { %>
+            <div class="recent-list">
+                <% recentUsers.forEach(u => { %>
+                    <div class="recent-item">
+                        <div class="recent-avatar">👤</div>
+                        <div class="recent-info">
+                            <strong><%= u.fullName %></strong>
+                            <small><%= u.email %></small>
+                        </div>
+                        <div class="recent-right">
+                            <span class="recent-amount"><%= new Intl.NumberFormat('vi-VN').format(u.walletBalance) %> đ</span>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+            <a href="/admin/users" class="btn-view-all">Xem tất cả người dùng →</a>
+        <% } %>
+    </div>
+
+    <!-- HÀNH ĐỘNG NHANH -->
+    <div class="card">
+        <h3 class="card-title">⚡ Hành động nhanh</h3>
+        <div class="quick-actions">
+            <a href="/admin/products/create" class="quick-action">
+                <span class="qa-icon">➕</span>
+                <span>Thêm sản phẩm</span>
+            </a>
+            <a href="/admin/products/accounts" class="quick-action">
+                <span class="qa-icon">📥</span>
+                <span>Nhập kho tài khoản</span>
+            </a>
+            <a href="/admin/support" class="quick-action">
+                <span class="qa-icon">💬</span>
+                <span>Trả lời khách</span>
+            </a>
+            <a href="/admin/wallet" class="quick-action">
+                <span class="qa-icon">💳</span>
+                <span>Giao dịch ví</span>
+            </a>
+        </div>
+    </div>
+</div>

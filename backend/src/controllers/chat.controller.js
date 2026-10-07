@@ -1,12 +1,6 @@
 // src/controllers/chat.controller.js
-// File MỚI HOÀN TOÀN.
-//
-// Lưu ý thiết kế: đây là shop 1 chủ (không phải sàn đa người bán) nên "người bán" = Admin/Shop,
-// không phải một User cụ thể. Vì dự án hiện chưa có hệ thống tài khoản Admin riêng, các route
-// phía Admin (adminReply, adminListConversations, adminGetConversation) được bảo vệ tạm bằng
-// một "khoá bí mật" đơn giản (header x-admin-secret khớp với biến ADMIN_SECRET trong .env),
-// KHÔNG dùng JWT. Đây là giải pháp tạm để bạn test 2 chiều ngay; khi cần bạn có thể thay bằng
-// một hệ thống tài khoản Admin thật (route/controller mới khác) mà không ảnh hưởng phần này.
+// Controller xử lý chat phía USER (Mobile App).
+// Phía Admin đã chuyển sang Web Dashboard (xem controllers/adminWeb/support.controller.js).
 const prisma = require('../prisma');
 
 // ---------- Phía người mua (yêu cầu đăng nhập, lấy danh tính qua req.userId từ token) ----------
@@ -62,7 +56,7 @@ async function listMyConversations(req, res) {
       include: {
         product: { select: { id: true, name: true } },
         order: { select: { id: true, status: true } },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 }, // chỉ lấy tin nhắn cuối để hiển thị preview
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -142,7 +136,7 @@ async function sendMessage(req, res) {
       }),
       prisma.conversation.update({
         where: { id: conversation.id },
-        data: { updatedAt: new Date() }, // đẩy hội thoại lên đầu danh sách
+        data: { updatedAt: new Date() },
       }),
     ]);
 
@@ -153,84 +147,9 @@ async function sendMessage(req, res) {
   }
 }
 
-// ---------- Phía Admin/Shop (bảo vệ tạm bằng ADMIN_SECRET, xem middleware trong chat.routes.js) ----------
-
-// GET /api/chat/admin/conversations -> toàn bộ hội thoại (để admin chọn trả lời)
-async function adminListConversations(req, res) {
-  try {
-    const conversations = await prisma.conversation.findMany({
-      include: {
-        user: { select: { id: true, fullName: true, email: true } },
-        product: { select: { id: true, name: true } },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-    res.json({ conversations });
-  } catch (err) {
-    console.error('chat adminListConversations error:', err);
-    res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại' });
-  }
-}
-
-// GET /api/chat/admin/conversations/:id -> chi tiết hội thoại bất kỳ (không giới hạn theo userId)
-async function adminGetConversationDetail(req, res) {
-  try {
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: req.params.id },
-      include: {
-        user: { select: { id: true, fullName: true, email: true } },
-        product: { select: { id: true, name: true } },
-        messages: { orderBy: { createdAt: 'asc' } },
-      },
-    });
-    if (!conversation) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
-    res.json({ conversation });
-  } catch (err) {
-    console.error('chat adminGetConversationDetail error:', err);
-    res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại' });
-  }
-}
-
-// POST /api/chat/admin/conversations/:id/messages   body: { content }
-async function adminReply(req, res) {
-  try {
-    const { content } = req.body;
-    if (!content || !content.trim()) {
-      return res.status(400).json({ message: 'Nội dung tin nhắn không được để trống' });
-    }
-
-    const conversation = await prisma.conversation.findUnique({ where: { id: req.params.id } });
-    if (!conversation) return res.status(404).json({ message: 'Không tìm thấy hội thoại' });
-
-    const [newMessage] = await prisma.$transaction([
-      prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderRole: 'ADMIN',
-          senderUserId: null,
-          content: content.trim(),
-        },
-      }),
-      prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
-
-    res.status(201).json({ message: newMessage });
-  } catch (err) {
-    console.error('chat adminReply error:', err);
-    res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại' });
-  }
-}
-
 module.exports = {
   createConversation,
   listMyConversations,
   getConversationDetail,
   sendMessage,
-  adminListConversations,
-  adminGetConversationDetail,
-  adminReply,
 };

@@ -1,0 +1,31 @@
+<div class="card">
+    <form action="/admin/products/accounts/import" method="POST">
+
+        <div class="form-group">
+            <label class="step-label">BƯỚC 1 · CHỌN SẢN PHẨM</label>
+            <select name="productId" required>
+                <option value="">-- Chọn sản phẩm cần nhập kho --</option>
+                <% products.forEach(p => { %>
+                    <option value="<%= p.id %>">
+                        <%= p.name %> (Kho hiện có: <%= p.available %>)
+                    </option>
+                <% }) %>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="step-label">BƯỚC 2 · DÁN DANH SÁCH TÀI KHOẢN</label>
+            <small class="text-muted">
+                Mỗi dòng 1 tài khoản, dạng <strong>email|matkhau</strong> (có thể thêm <strong>|ghichu</strong>).
+                Dòng sai định dạng sẽ bị bỏ qua.
+            </small>
+            <textarea name="accountsText" rows="12"
+                placeholder="email1@gmail.com|matkhau1&#10;email2@gmail.com|matkhau2&#10;email3@gmail.com|matkhau3|Tài khoản VIP"
+                required></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">NHẬP VÀO KHO</button>
+        </div>
+    </form>
+</div>

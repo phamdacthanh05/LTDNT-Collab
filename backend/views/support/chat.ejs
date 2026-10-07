@@ -1,0 +1,32 @@
+<div class="chat-container">
+    <div class="chat-header">
+        <div>
+            <strong><%= conversation.user.fullName %></strong>
+            <small class="text-muted"><%= conversation.user.email %></small>
+        </div>
+        <% if (conversation.product) { %>
+            <span class="badge badge-info">Sản phẩm: <%= conversation.product.name %></span>
+        <% } %>
+    </div>
+
+    <div class="chat-messages">
+        <% if (conversation.messages.length === 0) { %>
+            <p class="text-center text-muted">Chưa có tin nhắn nào.</p>
+        <% } %>
+        <% conversation.messages.forEach(m => { %>
+            <div class="message-row <%= m.senderRole === 'ADMIN' ? 'message-mine' : 'message-theirs' %>">
+                <div class="message-bubble">
+                    <p><%= m.content %></p>
+                    <small class="message-time">
+                        <%= new Date(m.createdAt).toLocaleString('vi-VN') %>
+                    </small>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+
+    <form action="/admin/support/<%= conversation.id %>/reply" method="POST" class="chat-composer">
+        <textarea name="content" placeholder="Nhập trả lời cho khách..." rows="3" required></textarea>
+        <button type="submit" class="btn-primary">Gửi ➤</button>
+    </form>
+</div>
