@@ -1,0 +1,96 @@
+<!-- ============ STATS ============ -->
+<div class="stats-grid stats-grid-3">
+    <div class="stat-card stat-success">
+        <div class="stat-icon">⬆️</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng nạp tiền</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(totalTopup) %> đ</span>
+        </div>
+    </div>
+    <div class="stat-card stat-danger">
+        <div class="stat-icon">⬇️</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng mua hàng</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(totalPurchase) %> đ</span>
+        </div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">↩️</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng hoàn tiền</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(totalRefund) %> đ</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ FILTER ============ -->
+<div class="card">
+    <form action="/admin/wallet" method="GET" class="filter-form">
+        <input type="text" name="q" value="<%= search %>" placeholder="🔍 Tìm theo tên KH, email, mô tả...">
+        <select name="type">
+            <option value="">Tất cả loại</option>
+            <option value="TOPUP" <%= type === 'TOPUP' ? 'selected' : '' %>>Nạp tiền</option>
+            <option value="PURCHASE" <%= type === 'PURCHASE' ? 'selected' : '' %>>Mua hàng</option>
+            <option value="REFUND" <%= type === 'REFUND' ? 'selected' : '' %>>Hoàn tiền</option>
+        </select>
+        <button type="submit" class="btn-primary">Lọc</button>
+        <% if (search || type) { %>
+            <a href="/admin/wallet" class="btn-secondary">Xóa lọc</a>
+        <% } %>
+    </form>
+</div>
+
+<!-- ============ TABLE ============ -->
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Khách hàng</th>
+            <th>Loại</th>
+            <th>Số tiền</th>
+            <th>Số dư sau</th>
+            <th>Trạng thái</th>
+            <th>Mô tả</th>
+            <th>Ngày</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (transactions.length === 0) { %>
+            <tr><td colspan="7" class="text-center empty-cell">Không có giao dịch nào.</td></tr>
+        <% } %>
+        <% transactions.forEach(t => { %>
+            <tr>
+                <td>
+                    <strong><%= t.user.fullName %></strong><br>
+                    <small class="text-muted"><%= t.user.email %></small>
+                </td>
+                <td>
+                    <span class="badge badge-<%= t.type === 'TOPUP' ? 'success' : (t.type === 'PURCHASE' ? 'danger' : 'warning') %>">
+                        <%= t.type === 'TOPUP' ? '⬆️ Nạp' : (t.type === 'PURCHASE' ? '⬇️ Mua' : '↩️ Hoàn') %>
+                    </span>
+                </td>
+                <td><strong><%= new Intl.NumberFormat('vi-VN').format(t.amount) %> đ</strong></td>
+                <td><%= t.balanceAfter !== null ? new Intl.NumberFormat('vi-VN').format(t.balanceAfter) + ' đ' : '-' %></td>
+                <td>
+                    <span class="badge badge-<%= t.status === 'SUCCESS' ? 'success' : (t.status === 'PENDING' ? 'warning' : 'danger') %>">
+                        <%= t.status %>
+                    </span>
+                </td>
+                <td><small><%= t.description || '-' %></small></td>
+                <td><small><%= new Date(t.createdAt).toLocaleString('vi-VN') %></small></td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>
+
+<!-- ============ PAGINATION ============ -->
+<% if (pagination.totalPages > 1) { %>
+    <div class="pagination">
+        <% if (pagination.hasPrev) { %>
+            <a href="?page=<%= pagination.page - 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= type ? '&type=' + type : '' %>" class="page-link">‹ Trước</a>
+        <% } %>
+        <span class="page-info">Trang <%= pagination.page %> / <%= pagination.totalPages %> (Tổng: <%= pagination.totalCount %>)</span>
+        <% if (pagination.hasNext) { %>
+            <a href="?page=<%= pagination.page + 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= type ? '&type=' + type : '' %>" class="page-link">Sau ›</a>
+        <% } %>
+    </div>
+<% } %>

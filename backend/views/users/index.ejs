@@ -1,0 +1,101 @@
+<!-- ============ STATS ============ -->
+<div class="stats-grid stats-grid-3">
+    <div class="stat-card stat-info">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng khách hàng</span>
+            <span class="stat-value"><%= totalBuyers %></span>
+        </div>
+    </div>
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">👑</div>
+        <div class="stat-content">
+            <span class="stat-label">Quản trị viên</span>
+            <span class="stat-value"><%= totalAdmins %></span>
+        </div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng tiền trong ví</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(totalWallet) %> đ</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ FILTER ============ -->
+<div class="card">
+    <form action="/admin/users" method="GET" class="filter-form">
+        <input type="text" name="q" value="<%= search %>" placeholder="🔍 Tìm theo tên hoặc email...">
+        <select name="role">
+            <option value="">Tất cả role</option>
+            <option value="BUYER" <%= role === 'BUYER' ? 'selected' : '' %>>Khách hàng</option>
+            <option value="ADMIN" <%= role === 'ADMIN' ? 'selected' : '' %>>Quản trị viên</option>
+        </select>
+        <button type="submit" class="btn-primary">Lọc</button>
+        <% if (search || role) { %>
+            <a href="/admin/users" class="btn-secondary">Xóa lọc</a>
+        <% } %>
+    </form>
+</div>
+
+<!-- ============ TABLE ============ -->
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Người dùng</th>
+            <th>Role</th>
+            <th>Số dư ví</th>
+            <th>Đơn hàng</th>
+            <th>Ngày tham gia</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (users.length === 0) { %>
+            <tr><td colspan="6" class="text-center empty-cell">Không có người dùng nào.</td></tr>
+        <% } %>
+        <% users.forEach(u => { %>
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar"><%= u.fullName.charAt(0).toUpperCase() %></div>
+                        <div>
+                            <strong><%= u.fullName %></strong><br>
+                            <small class="text-muted"><%= u.email %></small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge <%= u.role === 'ADMIN' ? 'badge-danger' : 'badge-info' %>">
+                        <%= u.role === 'ADMIN' ? '👑 Admin' : 'Khách' %>
+                    </span>
+                </td>
+                <td>
+                    <strong><%= new Intl.NumberFormat('vi-VN').format(u.walletBalance) %> đ</strong>
+                </td>
+                <td><%= u._count.orders %> đơn</td>
+                <td><small><%= new Date(u.createdAt).toLocaleDateString('vi-VN') %></small></td>
+                <td class="action-cell">
+                    <a href="/admin/users/<%= u.id %>" class="btn-sm">Xem chi tiết</a>
+                </td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>
+
+<!-- ============ PAGINATION ============ -->
+<% if (pagination.totalPages > 1) { %>
+    <div class="pagination">
+        <% if (pagination.hasPrev) { %>
+            <a href="?page=<%= pagination.page - 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= role ? '&role=' + role : '' %>" class="page-link">‹ Trước</a>
+        <% } %>
+        <span class="page-info">
+            Trang <%= pagination.page %> / <%= pagination.totalPages %>
+            (Tổng: <%= pagination.totalCount %> người dùng)
+        </span>
+        <% if (pagination.hasNext) { %>
+            <a href="?page=<%= pagination.page + 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= role ? '&role=' + role : '' %>" class="page-link">Sau ›</a>
+        <% } %>
+    </div>
+<% } %>

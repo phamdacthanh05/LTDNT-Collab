@@ -1,0 +1,117 @@
+<!-- ============ STATS ============ -->
+<div class="stats-grid stats-grid-4">
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">🧾</div>
+        <div class="stat-content">
+            <span class="stat-label">Tổng đơn hàng</span>
+            <span class="stat-value"><%= totalOrders %></span>
+        </div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+            <span class="stat-label">Đã giao</span>
+            <span class="stat-value"><%= deliveredOrders %></span>
+        </div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-content">
+            <span class="stat-label">Chờ xử lý</span>
+            <span class="stat-value"><%= pendingOrders %></span>
+        </div>
+    </div>
+    <div class="stat-card stat-info">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+            <span class="stat-label">Doanh thu</span>
+            <span class="stat-value"><%= new Intl.NumberFormat('vi-VN').format(totalRevenue) %> đ</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ FILTER ============ -->
+<div class="card">
+    <form action="/admin/orders" method="GET" class="filter-form">
+        <input type="text" name="q" value="<%= search %>" placeholder="🔍 Tìm theo tên KH, email hoặc mã đơn...">
+        <select name="status">
+            <option value="">Tất cả trạng thái</option>
+            <option value="PENDING" <%= status === 'PENDING' ? 'selected' : '' %>>Chờ xử lý</option>
+            <option value="PAID" <%= status === 'PAID' ? 'selected' : '' %>>Đã thanh toán</option>
+            <option value="DELIVERED" <%= status === 'DELIVERED' ? 'selected' : '' %>>Đã giao</option>
+            <option value="CANCELLED" <%= status === 'CANCELLED' ? 'selected' : '' %>>Đã hủy</option>
+        </select>
+        <button type="submit" class="btn-primary">Lọc</button>
+        <% if (search || status) { %>
+            <a href="/admin/orders" class="btn-secondary">Xóa lọc</a>
+        <% } %>
+    </form>
+</div>
+
+<!-- ============ TABLE ============ -->
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Mã đơn</th>
+            <th>Khách hàng</th>
+            <th>Sản phẩm</th>
+            <th>Tổng tiền</th>
+            <th>Thanh toán</th>
+            <th>Trạng thái</th>
+            <th>Ngày</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (orders.length === 0) { %>
+            <tr><td colspan="8" class="text-center empty-cell">Không có đơn hàng nào.</td></tr>
+        <% } %>
+        <% orders.forEach(o => { %>
+            <tr>
+                <td><code>#<%= o.id.slice(0, 8) %></code></td>
+                <td>
+                    <strong><%= o.user.fullName %></strong><br>
+                    <small class="text-muted"><%= o.user.email %></small>
+                </td>
+                <td>
+                    <% o.items.slice(0, 2).forEach(i => { %>
+                        <div>• <%= i.product.name %> <small class="text-muted">x<%= i.quantity %></small></div>
+                    <% }) %>
+                    <% if (o.items.length > 2) { %>
+                        <small class="text-muted">... và <%= o.items.length - 2 %> sản phẩm khác</small>
+                    <% } %>
+                </td>
+                <td><strong><%= new Intl.NumberFormat('vi-VN').format(o.totalAmount) %> đ</strong></td>
+                <td>
+                    <% if (o.payment) { %>
+                        <span class="badge badge-info"><%= o.payment.method %></span>
+                    <% } else { %>
+                        <span class="text-muted">-</span>
+                    <% } %>
+                </td>
+                <td>
+                    <span class="badge badge-<%= o.status === 'DELIVERED' ? 'success' : (o.status === 'PAID' ? 'info' : (o.status === 'PENDING' ? 'warning' : 'danger')) %>">
+                        <%= o.status === 'DELIVERED' ? '✅ Đã giao' : (o.status === 'PAID' ? '💳 Đã TT' : (o.status === 'PENDING' ? '⏳ Chờ' : '❌ Hủy')) %>
+                    </span>
+                </td>
+                <td><small><%= new Date(o.createdAt).toLocaleString('vi-VN') %></small></td>
+                <td class="action-cell">
+                    <a href="/admin/orders/<%= o.id %>" class="btn-sm">Chi tiết</a>
+                </td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>
+
+<!-- ============ PAGINATION ============ -->
+<% if (pagination.totalPages > 1) { %>
+    <div class="pagination">
+        <% if (pagination.hasPrev) { %>
+            <a href="?page=<%= pagination.page - 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= status ? '&status=' + status : '' %>" class="page-link">‹ Trước</a>
+        <% } %>
+        <span class="page-info">Trang <%= pagination.page %> / <%= pagination.totalPages %></span>
+        <% if (pagination.hasNext) { %>
+            <a href="?page=<%= pagination.page + 1 %><%= search ? '&q=' + encodeURIComponent(search) : '' %><%= status ? '&status=' + status : '' %>" class="page-link">Sau ›</a>
+        <% } %>
+    </div>
+<% } %>

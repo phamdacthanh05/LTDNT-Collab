@@ -1,0 +1,153 @@
+<a href="/admin/users" class="btn-secondary" style="margin-bottom: 20px;">← Quay lại danh sách</a>
+
+<!-- ============ USER INFO ============ -->
+<div class="user-detail-card">
+    <div class="user-detail-header">
+        <div class="user-avatar user-avatar-lg"><%= user.fullName.charAt(0).toUpperCase() %></div>
+        <div class="user-detail-info">
+            <h2><%= user.fullName %></h2>
+            <p class="text-muted">📧 <%= user.email %></p>
+            <p class="text-muted">📍 <%= user.address || 'Chưa có địa chỉ' %></p>
+            <p class="text-muted">📅 Tham gia: <%= new Date(user.createdAt).toLocaleString('vi-VN') %></p>
+            <span class="badge <%= user.role === 'ADMIN' ? 'badge-danger' : 'badge-info' %>">
+                <%= user.role === 'ADMIN' ? '👑 Admin' : 'Khách hàng' %>
+            </span>
+        </div>
+        <div class="user-wallet-box">
+            <span class="wallet-label">Số dư ví</span>
+            <span class="wallet-amount"><%= new Intl.NumberFormat('vi-VN').format(user.walletBalance) %> đ</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============ ADMIN ACTIONS ============ -->
+<div class="dashboard-2col">
+    <!-- Điều chỉnh ví -->
+    <div class="card">
+        <h3 class="card-title">💳 Điều chỉnh số dư ví</h3>
+        <form action="/admin/users/<%= user.id %>/wallet" method="POST">
+            <div class="form-group">
+                <label>Loại giao dịch</label>
+                <select name="type" required>
+                    <option value="CREDIT">➕ Cộng tiền (hoàn tiền, tặng)</option>
+                    <option value="DEBIT">➖ Trừ tiền (phạt, thu hồi)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Số tiền (đ)</label>
+                <input type="number" name="amount" min="1" placeholder="VD: 100000" required>
+            </div>
+            <div class="form-group">
+                <label>Lý do</label>
+                <input type="text" name="reason" placeholder="VD: Hoàn tiền đơn #abc, tặng khuyến mãi..." maxlength="191">
+            </div>
+            <button type="submit" class="btn-primary" onclick="return confirm('Xác nhận điều chỉnh ví?');">
+                XÁC NHẬN ĐIỀU CHỈNH
+            </button>
+        </form>
+    </div>
+
+    <!-- Đổi role -->
+    <div class="card">
+        <h3 class="card-title">🔑 Đổi quyền</h3>
+        <% if (user.id === session.adminId) { %>
+            <p class="text-muted">Bạn không thể đổi role của chính mình.</p>
+        <% } else { %>
+            <form action="/admin/users/<%= user.id %>/role" method="POST" onsubmit="return confirm('Bạn có chắc muốn đổi role?');">
+                <div class="form-group">
+                    <label>Role hiện tại: <strong><%= user.role %></strong></label>
+                    <select name="role" required>
+                        <option value="BUYER" <%= user.role === 'BUYER' ? 'selected' : '' %>>Khách hàng (BUYER)</option>
+                        <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>Quản trị viên (ADMIN)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-danger">ĐỔI ROLE</button>
+            </form>
+            <p class="text-muted" style="margin-top: 12px; font-size: 12px;">
+                ⚠️ Cẩn thận: Admin có toàn quyền hệ thống. Chỉ cấp cho người tin cậy.
+            </p>
+        <% } %>
+    </div>
+</div>
+
+<!-- ============ ORDERS ============ -->
+<div class="card">
+    <h3 class="card-title">🧾 Đơn hàng gần đây (10 đơn mới nhất)</h3>
+    <% if (orders.length === 0) { %>
+        <p class="text-muted text-center" style="padding: 20px;">Chưa có đơn hàng nào.</p>
+    <% } else { %>
+        <table class="admin-table">
+            <thead>
+                <tr><th>Mã đơn</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Ngày</th></tr>
+            </thead>
+            <tbody>
+                <% orders.forEach(o => { %>
+                    <tr>
+                        <td><code>#<%= o.id.slice(0, 8) %></code></td>
+                        <td><%= o.items.map(i => i.product.name).join(', ') %></td>
+                        <td><strong><%= new Intl.NumberFormat('vi-VN').format(o.totalAmount) %> đ</strong></td>
+                        <td>
+                            <span class="badge badge-<%= o.status === 'DELIVERED' ? 'success' : (o.status === 'PAID' ? 'info' : (o.status === 'PENDING' ? 'warning' : 'danger')) %>">
+                                <%= o.status %>
+                            </span>
+                        </td>
+                        <td><small><%= new Date(o.createdAt).toLocaleDateString('vi-VN') %></small></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } %>
+</div>
+
+<!-- ============ WALLET TRANSACTIONS ============ -->
+<div class="card">
+    <h3 class="card-title">💳 Giao dịch ví gần đây</h3>
+    <% if (walletTransactions.length === 0) { %>
+        <p class="text-muted text-center" style="padding: 20px;">Chưa có giao dịch nào.</p>
+    <% } else { %>
+        <table class="admin-table">
+            <thead>
+                <tr><th>Loại</th><th>Số tiền</th><th>Số dư sau</th><th>Mô tả</th><th>Ngày</th></tr>
+            </thead>
+            <tbody>
+                <% walletTransactions.forEach(t => { %>
+                    <tr>
+                        <td>
+                            <span class="badge badge-<%= t.type === 'TOPUP' ? 'success' : (t.type === 'PURCHASE' ? 'danger' : 'warning') %>">
+                                <%= t.type === 'TOPUP' ? '➕ Nạp' : (t.type === 'PURCHASE' ? '➖ Mua' : '↩️ Hoàn') %>
+                            </span>
+                        </td>
+                        <td><strong><%= new Intl.NumberFormat('vi-VN').format(t.amount) %> đ</strong></td>
+                        <td><%= t.balanceAfter !== null ? new Intl.NumberFormat('vi-VN').format(t.balanceAfter) + ' đ' : '-' %></td>
+                        <td><small><%= t.description || '-' %></small></td>
+                        <td><small><%= new Date(t.createdAt).toLocaleString('vi-VN') %></small></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } %>
+</div>
+
+<!-- ============ PURCHASE HISTORY ============ -->
+<div class="card">
+    <h3 class="card-title">🎫 Tài khoản đã mua (gần đây)</h3>
+    <% if (purchaseHistory.length === 0) { %>
+        <p class="text-muted text-center" style="padding: 20px;">Chưa có lịch sử mua hàng.</p>
+    <% } else { %>
+        <table class="admin-table">
+            <thead>
+                <tr><th>Sản phẩm</th><th>Tài khoản</th><th>Mật khẩu</th><th>Hết hạn</th></tr>
+            </thead>
+            <tbody>
+                <% purchaseHistory.forEach(p => { %>
+                    <tr>
+                        <td><strong><%= p.productName %></strong></td>
+                        <td><code><%= p.accountUsername %></code></td>
+                        <td><code><%= p.accountPassword %></code></td>
+                        <td><small><%= new Date(p.expiresAt).toLocaleString('vi-VN') %></small></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } %>
+</div>
