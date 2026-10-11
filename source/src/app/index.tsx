@@ -54,7 +54,7 @@ type MenuItem = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Screen                                                             */
+/*  Screen                                                            */
 /* ------------------------------------------------------------------ */
 export default function HomeScreen() {
   const router = useRouter();
@@ -330,66 +330,31 @@ export default function HomeScreen() {
               <Text style={styles.heroCtaText}>
                 {isAdmin ? 'Quản lý sản phẩm' : 'Khám phá ngay'}
               </Text>
-              <Text style={styles.heroCtaArrow}>→</Text>
+              <Text style={styles.heroCtaArrow}>›</Text>
             </Pressable>
           </View>
 
-          {/* Featured products */}
+          {/* Featured Section (Buyer only) */}
           {!isAdmin && featuredProducts.length > 0 && (
-            <>
-              <View style={styles.sectionHead}>
+            <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
+              <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Sản phẩm nổi bật</Text>
                 <Pressable onPress={() => router.push('/products' as any)}>
-                  <Text style={styles.sectionLink}>Xem tất cả</Text>
+                  <Text style={styles.seeAllText}>Xem tất cả ›</Text>
                 </Pressable>
               </View>
-              <Text style={styles.sectionSub}>Vài gợi ý từ kho tài nguyên số.</Text>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.featuredRow}
-              >
+              <View style={styles.productsGrid}>
                 {featuredProducts.map((product) => (
-                  <View key={product.id} style={styles.featuredCardWrap}>
+                  <View key={product.id} style={{ width: '48%', marginBottom: 12 }}>
                     <ProductCard
                       product={product}
-                      onPress={() => router.push(`/products/${product.id}`)}
-                      onAddToCart={() => addItem(product, 1)}
+                      onPress={() => router.push(`/products/${product.id}` as any)}
+                      onAddToCart={() => addItem(product)}
                     />
                   </View>
                 ))}
-              </ScrollView>
-            </>
-          )}
-
-          {/* Với admin: hiển thị một số lối vào nhanh dạng danh sách */}
-          {isAdmin && (
-            <>
-              <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>Tác vụ quản trị</Text>
               </View>
-              <Text style={styles.sectionSub}>Chọn nhanh một khu vực cần xử lý.</Text>
-
-              <View style={styles.adminList}>
-                {adminMenu.map((item) => (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => go(item)}
-                    style={({ pressed }) => [styles.adminRow, pressed && styles.menuItemPressed]}
-                  >
-                    <View style={styles.menuIconWrap}>
-                      <Text style={styles.menuIcon}>{item.icon}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.menuLabel}>{item.label}</Text>
-                      <Text style={styles.menuHint}>{item.hint}</Text>
-                    </View>
-                    <Text style={styles.menuChevron}>›</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </>
+            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -398,295 +363,327 @@ export default function HomeScreen() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Styles                                                             */
+/*  Styles                                                            */
 /* ------------------------------------------------------------------ */
 const styles = StyleSheet.create({
-  root: { flex: 1, flexDirection: 'row', backgroundColor: T.bg },
-  pressed: { opacity: 0.75 },
-
-  /* ---------- Sidebar ---------- */
+  root: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: T.bg,
+  },
   sidebar: {
     backgroundColor: T.sidebar,
-    paddingHorizontal: 14,
     borderRightWidth: 1,
     borderRightColor: T.border,
-    shadowColor: T.shadow,
-    shadowOpacity: 0.04,
-    shadowRadius: 14,
-    shadowOffset: { width: 4, height: 0 },
-    elevation: 4,
+    paddingHorizontal: 12,
+    justifyContent: 'space-between',
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
+  main: {
+    flex: 1,
+    backgroundColor: T.bg,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
   brandLogo: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    backgroundColor: T.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: T.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
   },
   brandText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    color: T.text,
-    letterSpacing: 1.4,
-    lineHeight: 14,
+    color: T.primary,
+    lineHeight: 15,
   },
-
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 20,
-    paddingHorizontal: 4,
+    backgroundColor: T.primarySoft,
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 14,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: T.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 8,
   },
-  avatarText: { color: '#fff', fontSize: 17, fontWeight: '800' },
-  userName: { fontSize: 13.5, fontWeight: '800', color: T.text, letterSpacing: -0.2 },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  userName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.text,
+  },
   rolePill: {
     alignSelf: 'flex-start',
-    backgroundColor: T.accentSoft,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 7,
-    marginTop: 4,
+    borderRadius: 4,
+    marginTop: 2,
   },
-  rolePillAdmin: { backgroundColor: T.primarySoft },
-  rolePillText: { fontSize: 9.5, fontWeight: '800', color: '#B45309', letterSpacing: 0.3 },
-  rolePillTextAdmin: { color: T.primaryDark },
-
+  rolePillAdmin: {
+    backgroundColor: T.accentSoft,
+  },
+  rolePillText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: T.muted,
+  },
+  rolePillTextAdmin: {
+    color: T.accent,
+  },
   walletCard: {
-    backgroundColor: T.primarySoft,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: 16,
+    backgroundColor: T.card,
+    borderWidth: 1,
+    borderColor: T.border,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
   },
-  walletLabel: { fontSize: 10.5, fontWeight: '700', color: T.primaryDark, opacity: 0.7 },
+  walletLabel: {
+    fontSize: 11,
+    color: T.muted,
+  },
   walletValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
-    color: T.primaryDark,
-    marginTop: 3,
-    letterSpacing: -0.4,
+    color: T.primary,
+    marginTop: 2,
   },
-
   sectionLabel: {
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1.4,
     color: T.muted,
-    marginTop: 22,
-    marginBottom: 8,
-    marginLeft: 4,
+    marginBottom: 6,
+    paddingHorizontal: 4,
+    letterSpacing: 0.5,
   },
-
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 14,
+    borderRadius: 8,
     marginBottom: 2,
   },
-  menuItemPressed: { backgroundColor: T.bg },
+  menuItemPressed: {
+    backgroundColor: T.primarySoft,
+  },
   menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: T.bg,
+    width: 28,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginRight: 8,
   },
-  menuIcon: { fontSize: 15 },
-  menuLabel: { fontSize: 13, fontWeight: '700', color: T.text, letterSpacing: -0.1 },
-  menuHint: { fontSize: 10.5, color: T.muted, marginTop: 1 },
-  menuChevron: { fontSize: 18, color: '#C9CCDD', fontWeight: '700' },
+  menuIcon: {
+    fontSize: 16,
+  },
+  menuLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.text,
+  },
+  menuHint: {
+    fontSize: 10,
+    color: T.muted,
+  },
+  menuChevron: {
+    fontSize: 16,
+    color: T.muted,
+    fontWeight: '600',
+  },
   menuBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
     backgroundColor: T.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
-  menuBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-
+  menuBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#FFF1F2',
-    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
   },
-  logoutBtnPressed: { opacity: 0.8 },
-  logoutIcon: { fontSize: 13, color: T.danger, fontWeight: '800' },
-  logoutText: { fontSize: 12.5, fontWeight: '800', color: T.danger },
+  logoutBtnPressed: {
+    opacity: 0.7,
+  },
+  logoutIcon: {
+    fontSize: 16,
+    color: T.danger,
+    marginRight: 10,
+  },
+  logoutText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.danger,
+  },
   version: {
+    fontSize: 10,
+    color: T.muted,
     textAlign: 'center',
-    fontSize: 9.5,
-    color: '#B9BDD0',
-    marginTop: 8,
-    letterSpacing: 0.3,
+    marginTop: 4,
   },
-
-  /* ---------- Main ---------- */
-  main: { flex: 1, backgroundColor: T.bg },
-
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 6,
-    paddingBottom: 14,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+    backgroundColor: T.card,
   },
-  greeting: { fontSize: 10, letterSpacing: 1.2, fontWeight: '800', color: T.muted },
+  greeting: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: T.muted,
+    letterSpacing: 0.5,
+  },
   topTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: T.text,
-    marginTop: 2,
-    letterSpacing: -0.3,
   },
   iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: T.card,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: T.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: T.shadow,
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    position: 'relative',
   },
   cartBadge: {
     position: 'absolute',
     top: -4,
     right: -4,
-    minWidth: 19,
-    height: 19,
-    borderRadius: 10,
     backgroundColor: T.danger,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderWidth: 2,
-    borderColor: T.bg,
+    paddingHorizontal: 4,
   },
-  cartBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-
-  /* ---------- Hero ---------- */
+  cartBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
   hero: {
-    marginHorizontal: 18,
-    borderRadius: 24,
-    backgroundColor: T.primary,
+    margin: 16,
     padding: 20,
+    borderRadius: 16,
+    backgroundColor: T.primary,
     overflow: 'hidden',
-    shadowColor: T.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    position: 'relative',
   },
   heroBlobA: {
     position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    top: -60,
-    right: -40,
+    right: -30,
+    top: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   heroBlobB: {
     position: 'absolute',
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(245,158,11,0.35)',
-    bottom: -50,
-    right: 30,
+    right: 40,
+    bottom: -40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   heroEyebrow: {
-    fontSize: 10,
-    letterSpacing: 1.6,
+    fontSize: 11,
     fontWeight: '800',
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   heroTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: '#fff',
-    marginTop: 8,
-    letterSpacing: -0.4,
-    lineHeight: 27,
+    marginBottom: 8,
   },
   heroText: {
-    fontSize: 12.5,
-    lineHeight: 19,
-    color: 'rgba(255,255,255,0.82)',
-    marginTop: 8,
-    maxWidth: '95%',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+    marginBottom: 16,
   },
   heroCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 16,
-  },
-  heroCtaPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  heroCtaText: { color: T.primaryDark, fontWeight: '800', fontSize: 13 },
-  heroCtaArrow: { color: T.primaryDark, fontWeight: '800', fontSize: 15 },
-
-  /* ---------- Sections ---------- */
-  sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    marginTop: 26,
-  },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: T.text, letterSpacing: -0.3 },
-  sectionLink: { fontSize: 12.5, fontWeight: '700', color: T.primary },
-  sectionSub: { fontSize: 12, color: T.muted, paddingHorizontal: 18, marginTop: 4 },
-
-  featuredRow: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 4, gap: 12 },
-  featuredCardWrap: { width: 214 },
-
-  /* ---------- Admin list ---------- */
-  adminList: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    gap: 10,
-  },
-  adminRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: T.card,
-    borderRadius: 18,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: T.border,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  heroCtaPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  heroCtaText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.primary,
+    marginRight: 4,
+  },
+  heroCtaArrow: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: T.primary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: T.text,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.primary,
+  },
+  productsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

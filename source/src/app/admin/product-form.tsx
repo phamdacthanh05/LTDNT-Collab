@@ -51,7 +51,11 @@ export default function AdminProductFormScreen() {
         const p: AdminStockProduct | undefined = list.find((x) => x.id === id);
         if (!p) {
           showError('Không tìm thấy sản phẩm (có thể đã bị xoá).');
-          router.back();
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/admin/products' as any);
+          }
           return;
         }
         setName(p.name);
@@ -108,7 +112,10 @@ export default function AdminProductFormScreen() {
           type: 'success',
           title: 'Đã lưu',
           message: r.message,
-          onConfirm: () => router.back(),
+          onConfirm: () => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/admin/products' as any);
+          },
         });
       } else {
         const r = await createProduct(payload);
@@ -119,7 +126,10 @@ export default function AdminProductFormScreen() {
           confirmText: 'Nhập tài khoản vào kho',
           cancelText: 'Để sau',
           onConfirm: () => router.replace('/admin/accounts' as any),
-          onCancel: () => router.back(),
+          onCancel: () => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/admin/products' as any);
+          },
         });
       }
     } catch (err) {
@@ -145,7 +155,13 @@ export default function AdminProductFormScreen() {
       {/* ============ Top Bar ============ */}
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/admin/products' as any);
+            }
+          }}
           style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
